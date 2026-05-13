@@ -1,0 +1,157 @@
+---
+title: Team Settings
+description: Configure team-wide settings to control your users' Devin for Terminal usage
+icon: "users"
+---
+
+## Overview
+
+Team-wide settings allow enterprise admins to control Devin for Terminal usage across their organization.
+
+- **Devin Enterprise admins** can manage these settings in the customer-facing Devin dashboard under **Settings → Enterprise → Windsurf** (`app.devin.ai/org/{orgName}/settings/windsurf`). This is self-service for admins with access to enterprise settings.
+- **Windsurf Enterprise admins** can manage these settings in the Windsurf dashboard at [https://windsurf.com/team/cli-settings](https://windsurf.com/team/cli-settings).
+
+<Warning>
+Only the Devin for Terminal-specific settings on these pages apply to Devin for Terminal. General [Windsurf Team Settings](https://windsurf.com/team/settings) apply to Windsurf and do not necessarily apply to Devin for Terminal unless also listed on the Devin for Terminal settings page.
+</Warning>
+
+## Available Settings
+
+### Models
+
+Control which models your users can access through Devin for Terminal. You can:
+
+- **Whitelist specific models** — Restrict users to a curated list of approved models
+- **Allow all models** — Give users access to all available models
+
+Click **Configure** to manage model access for each category.
+
+#### Default model
+
+You can also pin a **team-wide default model** that Devin for Terminal will use for new sessions. This is the same setting Windsurf uses for its default model, so configuring it once applies to both surfaces.
+
+- If no team default is set, Devin for Terminal uses its built-in default model.
+- If the pinned default is not present in the **allowed models** list above, Devin for Terminal falls back to the built-in default — the allowlist always takes precedence.
+- Individual users can still switch models during a session; this setting only controls the starting model for new sessions.
+
+Enterprise admins can configure the default model from the [Windsurf Team Settings](https://windsurf.com/team/settings) page, the [Devin for Terminal Settings](https://windsurf.com/team/cli-settings) page, or the customer-facing Devin Enterprise settings page at `app.devin.ai/org/{orgName}/settings/windsurf`.
+
+### Enable Web Search
+
+Allow the Devin for Terminal agent to perform web searches on the open Internet. This does not affect the agent's ability to read specific URLs, which is performed locally on the user's machine. This tool is **disabled by default** for enterprise teams.
+
+### MCP Servers
+
+Control whether your users can use MCP (Model Context Protocol) tools.
+
+- **Toggle on/off** — Enable or disable MCP server usage entirely
+- **Whitelisted MCP Servers** — Specify which MCP servers users are allowed to connect to. If no servers are added, all servers are whitelisted by default. Click **Add Server** to restrict access to specific servers.
+
+### Terminal Permissions
+
+Configure team-enforced permission rules for Devin for Terminal usage. These rules have the **highest precedence** and cannot be overridden by individual users' local or project configurations.
+
+Click **Configure** to open the permissions editor. The configuration requires a JSON object with three fields:
+
+```json
+{
+  "deny": [
+    "exec"
+  ],
+  "ask": [],
+  "allow": [
+    "Read(~/my-repository/**)"
+  ],
+}
+```
+
+- **`deny`** — Actions that are blocked entirely (takes highest priority)
+- **`ask`** — Actions that always prompt the user for approval
+- **`allow`** — Actions that are automatically approved without prompting
+
+Permissions can be **scope-based** or **tool-based**:
+
+| Type | Format | Example |
+|------|--------|---------|
+| File read | `Read(/path)` | `Read(~/sensitive/**)` |
+| File write | `Write(/path)` | `Write(.env*)` |
+| Command execution | `Exec(cmd)` | `Exec(rm)`, `Exec(sudo)` |
+| HTTP fetch | `Fetch(url)` | `Fetch(https://internal.api/*)` |
+| Tool-based | Tool name | `read`, `edit`, `exec` |
+
+<Tip>
+Use team-enforced deny rules to prevent actions across your entire organization, such as blocking access to sensitive directories or dangerous commands like `rm -rf` or `sudo`.
+</Tip>
+
+For detailed information on permission syntax, glob patterns, and configuration examples, see the [Permissions documentation](/reference/permissions).
+
+### Sandbox Enforcement
+
+Control sandbox behavior for your organization. These settings enforce OS-level isolation on all CLI sessions, restricting file system access and network traffic.
+
+#### Sandbox Enforcement Mode
+
+Set the enforcement level for the `--sandbox` flag across your organization:
+
+- **Optional** (default) — Users choose whether to pass `--sandbox`. No enforcement.
+- **Required** — The `--sandbox` flag is forced on for all users, even if they don't pass it on the command line. All CLI sessions run with OS-level file system sandboxing that enforces Read/Write permission scopes.
+
+A future **Strict** mode may lock down sandbox configuration entirely, preventing users from modifying sandbox settings.
+
+When sandbox is active:
+- **Writable paths** are derived from granted `Write(...)` permission scopes plus the workspace directory
+- **Readable paths** are derived from granted `Read(...)` scopes (platform defaults like `/usr/bin` are always readable)
+- Scopes granted mid-session dynamically expand the sandbox for subsequent commands
+
+<Warning>
+If sandbox resolution fails (e.g., the sandboxing tools are unavailable on the user's platform), the CLI will **refuse to start** rather than running unsandboxed. This fail-closed behavior applies whether sandbox was enabled via this team setting or by the user passing `--sandbox` directly, ensuring the security intent is never silently bypassed.
+
+When enterprise-enforced, users will see an error directing them to contact their team administrator. When user-initiated, the error suggests running without `--sandbox` to proceed without OS-level isolation.
+
+Common causes of sandbox resolution failure:
+- **Windows**: Sandbox requires a one-time privileged setup step (`devin sandbox setup`). Machines that haven't completed this step will hard-fail.
+- **Unsupported platforms**: If the platform doesn't support OS-level sandboxing, the CLI will exit rather than running unsandboxed.
+- **Permission scope errors**: Invalid paths in permission scopes that can't be resolved.
+
+Ensure all target machines are provisioned before setting sandbox enforcement mode to **Required** across your organization.
+</Warning>
+
+#### Domain Filtering
+
+Configure organization-wide domain allowlists and denylists for sandbox network filtering.
+
+- **Domain allowlist** — When set, **only** the domains in this list are reachable through the sandbox network proxy. This list is **authoritative**: it completely replaces any user-configured `allowed_domains` in their local [sandbox config](/reference/configuration/config-file#sandbox). Users cannot add additional domains to bypass admin restrictions.
+
+- **Domain denylist** — Domains that are always blocked. Enterprise denied domains are **additive**: they are merged with the user's local `denied_domains`, making the combined list more restrictive.
+
+See the [sandbox config reference](/reference/configuration/config-file#sandbox) for domain pattern syntax (e.g., `*.example.com`, `**.example.com`).
+
+**How enterprise and user domain lists interact:**
+
+| Scenario | Enterprise config | User config | Effective result |
+|----------|------------------|-------------|-----------------|
+| Admin sets allowlist | `allowed_domains: ["github.com"]` | `allowed_domains: ["npmjs.org"]` | Only `github.com` is allowed (enterprise replaces user list) |
+| Admin sets denylist | `denied_domains: ["evil.com"]` | `denied_domains: ["risky.io"]` | Both `evil.com` and `risky.io` are blocked (merged) |
+| No admin allowlist | `allowed_domains: []` | `allowed_domains: ["github.com"]` | User's allowlist is used |
+
+<Note>
+Because the user's local `denied_domains` are preserved and merged additively, a user could deny a domain that appears in the enterprise allowlist. This is intentional: the combined effect is always more restrictive, never less. If this causes access issues, the user should remove the conflicting entry from their local config.
+</Note>
+
+<Tip>
+Combine sandbox enforcement with team permission deny rules (e.g., `Write(/etc)`) to prevent agents from modifying sensitive directories at both the permission and OS level. Permission deny rules prevent the agent from even attempting the action, while the sandbox provides a second layer of OS-level enforcement.
+</Tip>
+
+### Show "Install Devin for Terminal" in the Windsurf Command Palette
+
+Devin for Terminal is bundled with Windsurf (starting with version **1.9577.24**) but requires explicit activation by an admin. Toggle this setting **on** to allow your users to install Devin for Terminal directly from the Windsurf Command Palette.
+
+Once enabled, users can open the Command Palette (<code>Cmd+Shift+P</code> on macOS or <code>Ctrl+Shift+P</code> on Windows/Linux) and run **Install Devin for Terminal** to add the `devin` binary to their PATH.
+
+<Note>
+This setting is available on **Windsurf Enterprise** and **Devin Enterprise** plans and is **off by default**.
+</Note>
+
+## Further Reading
+
+To understand how to configure Devin for Terminal further, see the [Configuration documentation](/reference/configuration/config-file).

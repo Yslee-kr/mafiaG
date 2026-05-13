@@ -1,0 +1,64 @@
+---
+title: Windsurf Auth
+description: Authenticate to Devin for Terminal using your existing Windsurf enterprise account
+icon: "key"
+---
+
+## Overview
+
+Enterprise users can authenticate to Devin for Terminal using their existing Windsurf enterprise accounts. This provides a seamless experience for organizations already using Windsurf, with billing handled through the standard **Windsurf credit model**.
+
+User management, team organization, SSO, RBAC, billing, and consumption are all inherited natively through the Windsurf dashboard. For most of your organizational needs, you should rely on the [Windsurf dashboard](https://windsurf.com).
+
+<Note>
+Windsurf authentication for Devin for Terminal is available to **Windsurf Enterprise** customers. Contact your account executive if you have questions about authentication, billing, or access.
+</Note>
+
+## Getting Started
+
+### Prerequisites
+
+Before using Windsurf authentication, ensure that:
+
+1. Your organization has a Windsurf enterprise account
+2. You have an active Windsurf user account that can use the agentic tools
+
+<Tip>
+No additional permissions are required to access Devin for Terminal. If your Windsurf enterprise users can use Windsurf, they can use Devin for Terminal.
+</Tip>
+
+### Installation via Windsurf
+
+Devin for Terminal is bundled with Windsurf starting with version **1.9577.24**. An admin must first enable the option in [Devin for Terminal Team Settings](https://windsurf.com/team/cli-settings) — see [Team Settings](/enterprise/team-settings#show-install-devin-for-terminal-in-the-windsurf-command-palette) for details.
+
+Once enabled, open the Command Palette (<code>Cmd+Shift+P</code> / <code>Ctrl+Shift+P</code>) and run **Install Devin for Terminal**.
+
+Alternatively, you can install using the standalone installer — see the [Quickstart](/) for instructions.
+
+### Authenticating
+
+To authenticate with your Windsurf enterprise account:
+
+```bash
+devin auth login
+```
+
+Follow the prompts and be sure to select the **Log in with SSO for Enterprise** button to authenticate through your organization's identity provider.
+
+## Billing & Analytics
+
+Usage through Devin for Terminal is billed using the standard **Windsurf credit model**. All Devin for Terminal usage counts toward your organization's existing Windsurf enterprise allocation.
+
+The analytics and billing system are shared between Windsurf and Devin for Terminal. Use the [Team Members dashboard](https://windsurf.com/team/members) to manage team organization or view consumption metrics across both products.
+
+Enterprise admins can also access usage analytics programmatically through the [Windsurf API](https://docs.windsurf.com/windsurf/accounts/api-reference/api-introduction) to monitor consumption across their organization.
+
+For details about credit billing and usage tracking, refer to your enterprise agreement or contact your account executive.
+
+## Further Reading
+
+For more information about Windsurf enterprise features, see the [Windsurf documentation](https://docs.windsurf.com/):
+
+- [Guide for Admins](https://docs.windsurf.com/windsurf/guide-for-admins) — Administration and team management
+- [SSO & SCIM](https://docs.windsurf.com/windsurf/accounts/sso-scim) — Single sign-on and user provisioning
+- [API Reference](https://docs.windsurf.com/windsurf/accounts/api-reference/api-introduction) — Access analytics and usage data

@@ -1,0 +1,356 @@
+---
+title: "Configuration File"
+description: "Complete reference for the Devin for Terminal config file format"
+icon: "file-code"
+---
+
+Devin for Terminal uses JSON files (with comment support) for configuration. This page documents all available options.
+
+---
+
+## File Locations
+
+| File | Purpose |
+|------|---------|
+| `~/.config/devin/config.json` | User-wide settings |
+| `.devin/config.json` | Project settings (committed) |
+| `.devin/config.local.json` | Project local overrides (gitignored) |
+
+<Note>
+On Windows, the user config path is `%APPDATA%\devin\config.json` (e.g. `C:\Users\<you>\AppData\Roaming\devin\config.json`), not `~\.config\devin\config.json`.
+</Note>
+
+---
+
+## Full Config Reference
+
+<Tabs>
+  <Tab title="User config">
+    ```json
+    // ~/.config/devin/config.json
+    {
+      // Agent behavior
+      "agent": {
+        "model": "swe-1-6-fast",           // Default model
+        "show_history_on_continue": true  // Show messages when resuming
+      },
+
+      // Theme
+      "theme_mode": null,            // "light", "dark", "terminal-dark", "terminal-light", "nocolor", or null (auto)
+
+      // Permissions
+      "permissions": {
+        "allow": [],
+        "deny": [],
+        "ask": []
+      },
+
+      // MCP servers
+      "mcpServers": {},
+
+      // Display
+      "show_path": false,             // Show CWD in input border
+      "unicode_mode": "auto",         // "auto", "unicode", or "ascii"
+
+      // File completion
+      "include_gitignored_files": false, // Include gitignored files in @ completions
+
+      // File access
+      "respect_gitignore": false,        // Block tool access to gitignored paths
+
+      // Updates
+      "auto_update": true,            // Install new versions in the background
+
+      // Notifications
+      "notify": "smart",              // "never" | "smart" | "always" — terminal notifications
+
+      // Proxy settings for CLI HTTP traffic
+      "proxy": {
+        "mode": "system",           // "system" | "manual" | "off"
+        "url": null,                // Proxy URL (required for manual mode)
+        "no_proxy": null            // Comma-separated bypass list
+      },
+
+      // Sandbox network filtering
+      "sandbox": {
+        "allowed_domains": [],       // Domain allowlist (empty = no filtering)
+        "denied_domains": [],        // Domain denylist (takes precedence)
+        "network_mode": "full"       // "full" or "limited" (GET/HEAD/OPTIONS only)
+      },
+
+      // Import settings from other tools
+      "read_config_from": {
+        "cursor": true,
+        "windsurf": true,
+        "claude": true
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Project config">
+    ```json
+    // .devin/config.json
+    {
+      // Permissions
+      "permissions": {
+        "allow": [],
+        "deny": [],
+        "ask": []
+      },
+
+      // MCP servers
+      "mcpServers": {},
+
+      // Import settings from other tools
+      "read_config_from": {
+        "cursor": true,
+        "windsurf": true,
+        "claude": true
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Options Reference
+
+<Note>
+Options marked with **User only** can only be set in the user config (`~/.config/devin/config.json`; `%APPDATA%\devin\config.json` on Windows). Only `permissions`, `mcpServers`, `read_config_from`, and `hooks` are available in project configs.
+</Note>
+
+### agent <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `model` | string | `"swe-1-6-fast"` | Default AI model |
+| `show_history_on_continue` | boolean | `true` | Show previous messages when resuming a session |
+
+### theme_mode <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+| Value | Behavior |
+|-------|----------|
+| `null` | Auto-detect (asks on first run) |
+| `"light"` | Light theme |
+| `"dark"` | Dark theme |
+| `"terminal-dark"` | Dark theme quantized to 16 ANSI colors (respects terminal color scheme) |
+| `"terminal-light"` | Light theme quantized to 16 ANSI colors (respects terminal color scheme) |
+| `"nocolor"` | No color output (monochrome, useful for VT100 terminals) |
+
+### permissions
+
+See [Permissions](/reference/permissions) for full documentation.
+
+```json
+{
+  "permissions": {
+    "allow": ["Read(**)", "Exec(git)"],
+    "deny": ["Exec(sudo)"],
+    "ask": ["Write(**/.env*)"]
+  }
+}
+```
+
+### mcpServers
+
+Map of server name to server configuration. Supports both local command (stdio) and remote HTTP servers. See [MCP Configuration](/extensibility/mcp/configuration).
+
+```json
+{
+  "mcpServers": {
+    "server-name": {
+      "command": "executable",
+      "args": ["arg1", "arg2"],
+      "env": { "KEY": "value" }
+    },
+    "remote-server": {
+      "url": "https://mcp.example.com/mcp",
+      "transport": "http"
+    }
+  }
+}
+```
+
+### show_path <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+Show the current working directory path in the input border. When enabled, the top border of the input box displays your prettified CWD (e.g. `~/projects/my-app`).
+
+| Value | Behavior |
+|-------|----------|
+| `false` | Hidden (default) |
+| `true` | Show CWD path in input border |
+
+### unicode_mode <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+Controls whether the terminal UI uses Unicode symbols or ASCII-safe fallbacks. Set to `"ascii"` if your terminal or font does not render Unicode glyphs correctly (e.g. the ⏺ symbol appearing as a box).
+
+| Value | Behavior |
+|-------|----------|
+| `"auto"` | Detect Unicode support from environment (default) |
+| `"unicode"` | Always use Unicode symbols |
+| `"ascii"` | Always use ASCII-safe characters |
+
+### include_gitignored_files <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+Include gitignored files in `@` tab completion results. When enabled, files matching `.gitignore` patterns will appear in `@` mention completions. This is useful if you store documentation or other files in gitignored directories that you want to reference.
+
+| Value | Behavior |
+|-------|----------|
+| `false` | Exclude gitignored files from completions (default) |
+| `true` | Include gitignored files in `@` completions |
+
+### respect_gitignore <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+Control whether the agent respects `.gitignore` when reading or writing files via tools. When enabled, tool calls that access gitignored paths are blocked. This is separate from `include_gitignored_files`, which only affects `@` tab completion.
+
+| Value | Behavior |
+|-------|----------|
+| `false` | Agent can access all files regardless of `.gitignore` (default) |
+| `true` | Block tool access to gitignored paths |
+
+### auto_update <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+Control background auto-update on macOS and Linux. When enabled, new releases are downloaded and activated while Devin for Terminal runs, so the next invocation of `devin` picks up the latest version automatically. The currently running session is unaffected — a swap of the `current` symlink only takes effect on the next launch.
+
+The update is designed to be safe against interruption: every filesystem step is staged to a temp path and promoted with an atomic rename, and concurrent updaters are serialized with a file lock. Quitting mid-update cannot leave the installation in a broken state — you'll just come back up on the old version.
+
+Only applies to self-managed installations (`curl | bash` on macOS/Linux). Installations bundled with another product (e.g. Windsurf) ignore this setting and update through their parent application.
+
+| Value | Behavior |
+|-------|----------|
+| `true` | Download and install new versions in the background (default) |
+| `false` | Only check for new versions; install manually via `/update` |
+
+### notify
+
+Control terminal notifications when the agent finishes or needs user input. The CLI writes a BEL character (triggers terminal bell / visual bell), an OSC 9 escape sequence (triggers a system notification in iTerm2 and compatible terminals), and an OSC 777 sequence (desktop notification in rxvt-unicode and other terminals). Terminals that do not recognize these sequences safely ignore them.
+
+| Value | Behavior |
+|-------|----------|
+| `"never"` | No notifications |
+| `"smart"` | Notify only when the terminal window is unfocused (uses OSC focus reporting) (default) |
+| `"always"` | Notify on every qualifying event regardless of focus |
+
+### read_config_from
+
+Control importing from other AI tool configurations:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `cursor` | boolean/null | `true` | Import from `.cursorrules`, `.cursor/rules/` |
+| `windsurf` | boolean/null | `true` | Import from `.windsurf/rules/` |
+| `claude` | boolean/null | `true` | Import from `.claude/` |
+
+Set to `false` to disable a specific import. `null` is treated as `true`.
+
+### proxy <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+Configure how the CLI routes its own outbound HTTP/HTTPS traffic (API calls, updates, MCP servers, etc.). This does not affect sandbox child-process networking (see `sandbox` below).
+
+The `mode` field selects the proxy strategy:
+
+| Mode | Behavior |
+|------|----------|
+| `"system"` (default) | Respect environment variables (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`) and platform-native PAC (Proxy Auto-Configuration) on macOS and Windows |
+| `"manual"` | Route all CLI traffic through the explicit `url` |
+| `"off"` | Connect directly — no proxy |
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | string | `"system"` | Proxy strategy: `"system"`, `"manual"`, or `"off"` |
+| `url` | string/null | `null` | Proxy URL. Required when `mode` is `"manual"`. Supports `http://`, `https://`, and `socks5://` schemes |
+| `no_proxy` | string/null | `null` | Comma-separated list of hosts/domains that bypass the proxy. Uses the same syntax as the `NO_PROXY` environment variable (e.g. `"localhost,127.0.0.1,.corp.example.com"`). Applies in any mode |
+
+**Example — corporate proxy:**
+
+```json
+{
+  "proxy": {
+    "mode": "manual",
+    "url": "http://proxy.corp.example.com:8080",
+    "no_proxy": "localhost,127.0.0.1,.internal.corp"
+  }
+}
+```
+
+**Example — disable proxy:**
+
+```json
+{
+  "proxy": {
+    "mode": "off"
+  }
+}
+```
+
+### sandbox <span style={{fontSize: '0.7em', color: 'gray'}}>(user only)</span>
+
+<Warning>
+Sandbox network filtering is currently unstable. If you need this feature, please reach out to your account representative for stability timelines.
+</Warning>
+
+Configure domain-level network filtering for the sandbox. When `--sandbox` is active and domain filtering is configured, a managed network proxy starts on loopback and the sandbox restricts all child traffic to route through it.
+
+The `--sandbox` flag enforces the active Read and Write permission scopes at the OS level. Writable roots are derived from granted `Write(...)` scopes plus workspace directories; readable roots come from `Read(...)` scopes (with platform defaults always readable). Scopes granted mid-session dynamically expand the sandbox for subsequent commands.
+
+<Note>
+If `--sandbox` is passed but sandbox resolution fails (e.g., sandboxing tools are unavailable on the current platform), the CLI will refuse to start rather than running unsandboxed. This fail-closed behavior ensures the security intent of `--sandbox` is never silently bypassed.
+</Note>
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `allowed_domains` | string[] | `[]` | Domain patterns allowed through the proxy. When non-empty, only matching domains are allowed (allowlist mode) |
+| `denied_domains` | string[] | `[]` | Domain patterns always blocked. Deny rules take precedence over allow rules |
+| `network_mode` | string | `"full"` | `"full"` allows all HTTP methods; `"limited"` allows only GET/HEAD/OPTIONS |
+
+**Domain pattern syntax:**
+
+| Pattern | Matches |
+|---------|---------|
+| `example.com` | Exact match only |
+| `*.example.com` | Any subdomain (not the apex) |
+| `**.example.com` | Apex domain and any subdomain |
+
+**Example:**
+
+```json
+{
+  "sandbox": {
+    "allowed_domains": [
+      "github.com",
+      "**.npmjs.org",
+      "**.crates.io",
+      "**.pypi.org"
+    ],
+    "denied_domains": ["evil.example.com"],
+    "network_mode": "full"
+  }
+}
+```
+
+<Note>
+Domain filtering applies when the sandbox is active (`--sandbox`). Without `--sandbox`, the sandbox section is ignored.
+</Note>
+
+<Note>
+For enterprise teams, admins can override domain lists via [Team Settings](/enterprise/team-settings#domain-filtering). Enterprise allowlists are authoritative (they replace your local `allowed_domains`), while enterprise denylists are additive (merged with your local `denied_domains`).
+</Note>
+
+---
+
+## JSON with Comments
+
+Config files support JavaScript-style comments:
+
+```json
+{
+  // Line comments
+  "agent": {
+    "model": "sonnet"  // Inline comments
+  },
+  /* Block
+     comments */
+  "permissions": {}
+}
+```

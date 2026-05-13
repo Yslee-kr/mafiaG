@@ -1,0 +1,343 @@
+---
+title: "Custom Hooks"
+description: "Full YAML reference for writing hooks with matchers, filters, and effects"
+icon: "code"
+hidden: true
+---
+
+<Warning>
+**Coming Soon** — Hooks are not yet available in Devin for Terminal. This documentation describes planned functionality.
+</Warning>
+
+This page covers the complete YAML syntax for defining hooks in `.devin/hooks.yaml`.
+
+---
+
+## Hook Structure
+
+Every hook has three parts: a name, event matchers (`on`), and effects (`then`):
+
+```yaml
+hooks:
+  - name: my-hook            # Optional but recommended
+    on:                       # What events to match
+      - type: pre_tool
+        tool_name: exec
+    then:                     # What to do when matched
+      decision: block
+```
+
+---
+
+## Matchers
+
+Matchers determine which events trigger your hook. You can match on event type, tool name, tool arguments, and more.
+
+### Basic Matching
+
+```yaml
+on:
+  - type: pre_tool
+    tool_name: exec                    # Exact match on tool name
+    tool_args.command: "npm install"   # Exact match on argument
+```
+
+### Matcher Operators
+
+For more flexible matching, use matcher objects:
+
+<Tabs>
+  <Tab title="Glob">
+    Shell-style wildcard matching:
+    ```yaml
+    on:
+      - type: pre_tool
+        tool_name: exec
+        tool_args.command:
+          glob: "git push*"
+    ```
+  </Tab>
+  <Tab title="Regex">
+    Regular expression matching:
+    ```yaml
+    on:
+      - type: pre_tool
+        tool_name: exec
+        tool_args.command:
+          regex: "^(rm|del)\\s"
+    ```
+  </Tab>
+  <Tab title="Exact">
+    Explicit exact matching (same as bare string):
+    ```yaml
+    on:
+      - type: pre_tool
+        tool_name:
+          eq: exec
+    ```
+  </Tab>
+  <Tab title="List">
+    Match any value in a list:
+    ```yaml
+    on:
+      - type: pre_tool
+        tool_name:
+          - exec
+          - edit
+          - write
+    ```
+  </Tab>
+</Tabs>
+
+### Nested Argument Matching
+
+You can match on nested tool arguments using dot notation:
+
+```yaml
+on:
+  - type: pre_tool
+    tool_name: edit
+    tool_args.file_path:
+      glob: "*.lock"
+```
+
+---
+
+## Effects
+
+Effects define what happens when a hook matches. You can combine multiple effects in a single hook.
+
+### decision
+
+Control whether the action proceeds:
+
+| Value | Behavior |
+|-------|----------|
+| `approve` | Allow the action without prompting |
+| `block` | Deny the action |
+| `ask` | Force user confirmation |
+| `interrupt` | Interrupt the agent |
+
+```yaml
+then:
+  decision: block
+```
+
+### add_context
+
+Inject a message into the agent's conversation:
+
+```yaml
+then:
+  add_context: |
+    Remember: this project uses ESM imports only.
+    Never use require() or CommonJS syntax.
+```
+
+### command
+
+Run a shell command. The event data is available as environment variables:
+
+```yaml
+then:
+  command:
+    cmd: ["sh", "-c", "./scripts/check-policy.sh"]
+    timeout_ms: 5000
+    env:
+      CUSTOM_VAR: "value"
+    cwd: /path/to/dir
+```
+
+**Command environment variables** (automatically set):
+
+| Variable | Description |
+|----------|-------------|
+| `EVENT_TYPE` | The event type (e.g., `pre_tool`) |
+| `TOOL_NAME` | The tool being called |
+| `TOOL_ARGS` | JSON string of tool arguments |
+
+**Command exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success — hook continues normally |
+| 2 | Block — action is denied |
+| Other | Error — logged but doesn't block |
+
+The command's stdout can return a JSON object to produce additional effects:
+
+```json
+{
+  "decision": "block",
+  "reason": "This action violates policy",
+  "add_context": "Try a different approach."
+}
+```
+
+### prompt
+
+Evaluate an LLM prompt and use the result:
+
+```yaml
+then:
+  prompt:
+    template: |
+      The user wants to run: {{tool_args.command}}
+      Is this safe for a production environment? Reply with JSON:
+      {"decision": "approve"} or {"decision": "block", "reason": "..."}
+    model: sonnet
+    timeout_ms: 10000
+```
+
+Template variables use `{{variable}}` syntax and are interpolated from the event data.
+
+### cogs (Middleware)
+
+Apply temporary permission or tool changes:
+
+```yaml
+then:
+  cogs:
+    - permissions:
+        allow:
+          - "Read(**)"
+          - "Exec(npm)"
+        deny:
+          - "Write(/etc/**)"
+```
+
+---
+
+## Complete Examples
+
+### Enforce Branch Protection
+
+```yaml
+hooks:
+  - name: protect-main-branch
+    on:
+      - type: pre_tool
+        tool_name: exec
+        tool_args.command:
+          regex: "git\\s+(push|commit).*\\b(main|master)\\b"
+    then:
+      decision: block
+      add_context: |
+        Direct commits and pushes to main/master are not allowed.
+        Create a feature branch and open a pull request instead.
+```
+
+### Auto-Approve Read-Only Commands
+
+```yaml
+hooks:
+  - name: approve-safe-commands
+    on:
+      - type: permission_request
+        tool_name: exec
+        tool_args.command:
+          - glob: "git status*"
+          - glob: "git log*"
+          - glob: "git diff*"
+          - glob: "ls *"
+          - glob: "cat *"
+    then:
+      decision: approve
+```
+
+### Add Context for Test Files
+
+```yaml
+hooks:
+  - name: test-file-context
+    on:
+      - type: pre_tool
+        tool_name: edit
+        tool_args.file_path:
+          glob: "**/*.test.*"
+    then:
+      add_context: |
+        When editing test files:
+        - Use describe/it blocks (not test())
+        - Mock external dependencies
+        - Follow AAA pattern (Arrange, Act, Assert)
+```
+
+### Custom Approval Script
+
+```yaml
+hooks:
+  - name: custom-approval
+    on:
+      - type: permission_request
+        tool_name: exec
+    then:
+      command:
+        cmd: ["python", "./scripts/approve-command.py"]
+        timeout_ms: 3000
+        env:
+          POLICY_FILE: "./security-policy.json"
+```
+
+### Notify on Session Start
+
+```yaml
+hooks:
+  - name: session-notification
+    on:
+      - type: session_start
+    then:
+      command:
+        cmd: ["sh", "-c", "echo 'Devin for Terminal session started in $(pwd)' | notify-send 'Devin'"]
+        timeout_ms: 2000
+```
+
+---
+
+## Claude-Format Hooks
+
+If you're coming from Claude Code, you can also define hooks in the `"hooks"` key of your config file (`.devin/config.json`, `.devin/config.local.json`, or `~/.config/devin/config.json` — `%APPDATA%\devin\config.json` on Windows):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "exec",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/check-command.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+<Note>
+Claude-format hooks support the same events with different naming: `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Stop`, `SessionStart`, `SessionEnd`, `PermissionRequest`.
+
+Configuration files are located at `.devin/config.json` (project), `.devin/config.local.json` (project-local), or `~/.config/devin/config.json` (user; `%APPDATA%\devin\config.json` on Windows).
+</Note>
+
+---
+
+## Tips
+
+<CardGroup cols={2}>
+  <Card title="Name your hooks" icon="tag">
+    Use descriptive names — they appear in `/hooks` output and logs.
+  </Card>
+  <Card title="Use timeouts" icon="clock">
+    Always set timeouts on commands and prompts to prevent hanging.
+  </Card>
+  <Card title="Test incrementally" icon="flask">
+    Start with `add_context` effects before using `decision: block` to see what matches.
+  </Card>
+  <Card title="Check loaded hooks" icon="list">
+    Use the `/hooks` slash command to verify your hooks are loaded correctly.
+  </Card>
+</CardGroup>

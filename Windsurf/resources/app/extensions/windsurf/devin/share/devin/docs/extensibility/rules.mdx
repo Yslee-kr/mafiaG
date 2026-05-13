@@ -1,0 +1,168 @@
+---
+title: "Rules & AGENTS.md"
+description: "Provide always-on instructions and context that guide the agent in every session"
+icon: "scroll"
+---
+
+Rules are persistent instructions that shape how Devin for Terminal behaves in your project. They're injected into the agent's context at the start of every session, ensuring consistent behavior across your team.
+
+Common uses for rules include coding standards, architectural guidelines, preferred libraries, testing conventions, and project-specific constraints.
+
+**To improve coding ability, speed of completion, and lower cost**, we highly recommend **using Skills instead whenever possible**. Skills are only injected into the context when relevant. **Rules and AGENTS should be kept as small as possible.**
+
+**Our recommended pattern** is to use a rule to reference skills that the model should use in particular scenarios.
+
+---
+
+## AGENTS.md
+
+The simplest way to add rules is with an `AGENTS.md` file at your project root:
+
+```markdown
+# Project Rules
+
+- Use TypeScript for all new files
+- Follow the existing patterns in src/components/
+- Always run `npm run lint` before committing
+- Use pnpm, not npm or yarn
+- Write tests for all new utility functions
+```
+
+Devin for Terminal reads this file automatically.
+
+<Tip>
+  `AGENTS.md` is the recommended approach for project rules. It's easy to read, version-controlled, and works across multiple AI tools.
+</Tip>
+
+---
+
+## Supported File Names
+
+Devin for Terminal reads rules from any of these files:
+
+| File | Notes |
+| --- | --- |
+| `AGENTS.md` | Recommended |
+| `AGENT.md` | Singular alternative |
+| `CLAUDE.md` | Compatible with Claude Code |
+
+All of these are treated identically — their contents are loaded as always-on rules.
+
+These files can exist at multiple levels in your project (not just the root). Files at the workspace root are loaded at session start. Files in subdirectories are discovered lazily when the agent accesses files in that directory, keeping the context focused on the relevant part of the codebase.
+
+---
+
+## Rules From Other Tools
+
+If you're coming from another AI coding tool, Devin for Terminal can read your existing rules:
+
+<AccordionGroup>
+  <Accordion title="Cursor" icon="i-cursor">
+    Devin for Terminal reads from `.cursorrules` and `.cursor/rules/*.md`.
+
+    Cursor rules support frontmatter to control activation:
+
+    ```markdown
+    ---
+    description: "React component guidelines"
+    globs: "src/components/**/*.tsx"
+    alwaysApply: false
+    ---
+
+    Use functional components with hooks. Never use class components.
+    ```
+
+    **Activation behavior:**
+
+    - `alwaysApply: true` — Always active
+    - `globs` specified — Active when working with matching files
+    - `description` only — Agent decides when to apply
+    - None of the above — User must invoke manually
+  </Accordion>
+
+  <Accordion title="Windsurf" icon="wind">
+    Devin for Terminal reads from `.windsurf/rules/*.md` and `.windsurf/global_rules.md`.
+
+    **Subdirectory support:** `.windsurf/rules/` directories can exist at multiple levels in your project, not just the root. Rules at the workspace root are loaded at session start. Rules in subdirectories are discovered lazily — when the agent accesses files in that directory, any `.windsurf/rules/` found there (and in parent directories up to the workspace root) are automatically loaded. This avoids polluting the agent's context with rules from unrelated parts of the project.
+
+    Windsurf rules support frontmatter:
+
+    ```markdown
+    ---
+    description: "API design rules"
+    trigger: always_on
+    ---
+
+    All API endpoints must return JSON with a consistent envelope format.
+    ```
+
+    **Trigger values:** `always_on`, `manual`, `model_decision`, `agent`, `glob`
+  </Accordion>
+
+  <Accordion title="Claude Code" icon="ant">
+    Devin for Terminal reads from the `.claude/` directory.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Devin for Terminal does not support `.codeiumignore` files. If you use Codeium's autocomplete and have configured ignore patterns, those patterns will not apply to Devin for Terminal.
+</Warning>
+
+---
+
+## Controlling Imports
+
+You can enable or disable reading from specific tool formats in your config file (`~/.config/devin/config.json` — or `%APPDATA%\devin\config.json` on Windows — or `.devin/config.json`):
+
+```json
+{
+  "read_config_from": {
+    "cursor": true,
+    "windsurf": true,
+    "claude": true
+  }
+}
+```
+
+`AGENTS.md` is always read and cannot be disabled.
+
+---
+
+## Rule Activation Types
+
+Rules loaded from external formats may have different activation behaviors:
+
+| Type | Behavior |
+| --- | --- |
+| **Always-on** | Active in every session, no user action needed |
+| **Glob-activated** | Active when the agent works with files matching specific patterns |
+| **Agent-decided** | The agent chooses when to apply based on the rule's description |
+| **User-invocable** | Only active when explicitly triggered by the user |
+
+Rules from `AGENTS.md` are always "always-on".
+
+---
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Keep rules concise" icon="compress">
+    Long, verbose rules dilute the agent's attention. Focus on what matters most.
+  </Card>
+
+  <Card title="Be specific" icon="bullseye">
+    "Use pnpm" is better than "use the right package manager". Concrete instructions are easier to follow.
+  </Card>
+
+  <Card title="Include examples" icon="code">
+    Show the pattern you want, not just a description of it.
+  </Card>
+
+  <Card title="Version control them" icon="code-branch">
+    Keep rules in your repo so the whole team benefits from the same guidelines.
+  </Card>
+</CardGroup>
+
+<Note>
+  For most common types of rules, consider using skills instead. Skills give you more control over when and how they're applied.
+</Note>

@@ -1,0 +1,272 @@
+---
+title: "Subagents"
+description: "Delegate tasks to independent subagents that work in the foreground or background"
+icon: "users"
+---
+
+Subagents let the main agent spawn independent workers to handle subtasks. A subagent shares tools and codebase context with the parent, but operates in its own conversation chain -- it does not inherit the parent's conversation history. This is useful for tasks that benefit from focused, independent work -- like exploring a codebase, running tests, or implementing a feature in parallel.
+
+You can ask the agent to use subagents explicitly (e.g. "research how auth works in a subagent"), or the agent may decide to delegate on its own when it determines a task would benefit from independent work.
+
+In our measurements, **subagents** **both** **improve overall coding performance** **and** **reduce cost**.
+
+---
+
+## How Subagents Work
+
+When the agent spawns a subagent, it selects one of the available **subagent profiles** and chooses whether the subagent should run in the foreground or background. Subagents can run in two modes:
+
+<CardGroup cols={2}>
+  <Card title="Foreground" icon="display">
+    Runs inline in your session. The parent agent pauses and waits for the subagent to finish before continuing. You can approve or deny tool calls as they come up.
+  </Card>
+
+  <Card title="Background" icon="clock">
+    Runs in parallel while the parent agent continues working. The parent is automatically notified when the subagent completes. Unapproved tools are automatically denied.
+  </Card>
+</CardGroup>
+
+<Note>
+  You do not see the subagent's raw output directly. When a subagent finishes, the parent agent reads the result and summarizes the key findings and actions for you.
+</Note>
+
+---
+
+## Subagent Profiles
+
+Each subagent runs with a specific profile that determines its capabilities. There are two built-in profiles:
+
+| Profile | Description | Tool Access |
+| --- | --- | --- |
+| `subagent_explore` | Read-only codebase exploration and research | Read-only tools only (regardless of foreground or background) |
+| `subagent_general` | General-purpose tasks including code changes | Full tool access (foreground) or pre-approved tools only (background) |
+
+<Note>
+  The agent automatically chooses the appropriate profile based on the task. Explore subagents are ideal for research and understanding, while general subagents can make changes.
+</Note>
+
+You can also define your own custom subagent profiles — see [Custom Subagents](#custom-subagents) below.
+
+---
+
+## Tool Permissions
+
+How tool permissions work depends on whether the subagent is running in the foreground or background:
+
+- **Foreground subagents** behave like the main agent -- you are prompted to approve or deny tool calls as usual.
+- **Background subagents** inherit any tool permissions you have already granted during the current session. Any tool that has not been pre-approved is automatically denied. Background subagents cannot prompt you for new permissions.
+
+<Tip>
+  If a background subagent fails because a required tool was denied, you can resume it in the foreground to approve the necessary permissions. See [Resuming Subagents](#resuming-subagents) below.
+</Tip>
+
+---
+
+## Monitoring Subagents
+
+### Subagent Indicator
+
+When background subagents are running, an indicator appears below the input area showing their status. You can navigate to the indicator by pressing <kbd>↓</kbd> from the input area, then press <kbd>Enter</kbd> to open the subagent panel.
+
+When a foreground subagent is running, the spinner displays **"Subagent running · Ctrl\+B to run in background"**.
+
+### Subagent Panel
+
+The subagent panel lets you view and manage all active and completed subagents. It shows each subagent's profile, title, status, elapsed time, and tool call count.
+
+---
+
+## Foreground / Background Switching
+
+You can move subagents between foreground and background while they're running:
+
+- **Background a foreground subagent:** Press <kbd>Ctrl</kbd>\+<kbd>B</kbd> while a foreground subagent is running. The subagent continues working in the background, and the parent agent resumes.
+- **Foreground a background subagent:** Open the subagent panel and press <kbd>f</kbd> on a running background subagent. The subagent's output will display inline.
+
+<Note>
+  When you move a subagent to the background, the parent agent's tool call has already returned, so the parent continues independently. The subagent's result won't feed back into the parent's current pipeline, but you'll be notified when it completes.
+</Note>
+
+---
+
+## Cancelling Subagents
+
+You can cancel a running subagent in two ways:
+
+1. **From the subagent panel:** Open the panel and press <kbd>x</kbd> on a running subagent.
+2. **Foreground subagent:** Press <kbd>Ctrl</kbd>\+<kbd>C</kbd> or <kbd>Esc</kbd> to cancel the currently running foreground subagent.
+
+---
+
+## Resuming Subagents
+
+Cancelled, failed, or completed subagents can be resumed with a new prompt. You can ask the agent to resume a subagent, and it will continue where it left off. Resumed subagents always run in the **foreground**, so you can approve any tool calls that were previously denied.
+
+This is especially useful when:
+
+- A background subagent failed because a required tool was denied -- resume it in the foreground to grant the necessary permissions.
+- A subagent completed but you want it to do additional follow-up work based on its findings.
+- A subagent was cancelled prematurely and you want it to continue.
+
+---
+
+## Nesting Depth
+
+Subagents cannot spawn their own subagents. Only the root agent can spawn subagents. Subagent tools are disabled inside a subagent to prevent unbounded nesting. An older version of Devin for Terminal did allow this but we couldn't find a use-case so we turned it off. If you want this for some reason we would love to hear it!
+
+---
+
+## Custom Subagents
+
+<Warning>
+  Custom subagents are **experimental**. The format, behavior, and configuration options may change in future releases.
+</Warning>
+
+Beyond the built-in `subagent_explore` and `subagent_general` profiles, you can define your own custom subagent profiles. Custom subagents let you create specialized workers with their own system prompts, tool restrictions, model overrides, and permissions — tailored to specific tasks in your workflow.
+
+### Creating a Custom Subagent
+
+Custom subagents are defined as `AGENT.md` files inside a named directory under `agents/`. The directory name becomes the profile's identifier.
+
+<Tabs>
+  <Tab title="Project-specific">
+    ```text
+    .devin/agents/
+    └── reviewer/
+        └── AGENT.md
+    ```
+
+    Also supported:
+
+    ```text
+    .agents/agents/
+    └── reviewer/
+        └── AGENT.md
+    ```
+  </Tab>
+  <Tab title="Global">
+    ```text
+    # Linux/macOS
+    ~/.config/devin/agents/
+    └── reviewer/
+        └── AGENT.md
+
+    # Windows
+    %APPDATA%\devin\agents\
+    └── reviewer\
+        └── AGENT.md
+    ```
+  </Tab>
+</Tabs>
+
+### AGENT.md Format
+
+An `AGENT.md` file uses the same YAML frontmatter as skills, followed by the subagent's system prompt:
+
+```markdown
+---
+name: reviewer
+description: Reviews code changes for correctness and style
+model: sonnet
+allowed-tools:
+  - read
+  - grep
+  - glob
+  - exec
+permissions:
+  allow:
+    - Exec(git diff)
+    - Exec(git log)
+  deny:
+    - write
+    - edit
+---
+
+You are a code review subagent. Your job is to review code changes
+thoroughly and report findings back to the parent agent.
+
+Focus on:
+1. Correctness — logic errors, edge cases, off-by-one mistakes
+2. Security — potential vulnerabilities
+3. Style — consistency with the rest of the codebase
+4. Performance — obvious inefficiencies
+
+Always cite specific file paths and line numbers in your findings.
+```
+
+### Frontmatter Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | directory name | Identifier for the profile (must not conflict with built-in profiles) |
+| `description` | string | none | Shown to the agent when selecting a profile |
+| `model` | string | default subagent model | Override the model used by this subagent |
+| `allowed-tools` | list | all tools | Restrict which tools the subagent can use |
+| `permissions` | object | inherit | Permission overrides (`allow`, `deny`, `ask`) |
+
+### How Custom Subagents Are Used
+
+Once defined, custom subagent profiles appear alongside the built-in ones. The agent sees a description of each available profile and chooses the most appropriate one when spawning a subagent. You can also ask the agent to use a specific profile by name (e.g., "review this code using the reviewer subagent").
+
+Custom subagent profiles that conflict with a built-in profile name (e.g., `subagent_explore`, `subagent_general`) are skipped with a warning.
+
+### Importing From Other Tools
+
+Custom subagents are also imported from Claude Code's agent format:
+
+| Source | File Pattern |
+| --- | --- |
+| `.claude/agents/*.md` | Each `.md` file becomes a subagent profile |
+
+<Note>
+  Claude Code agent files use `tools` instead of `allowed-tools` in their frontmatter. Both formats are supported automatically.
+</Note>
+
+### Examples
+
+#### Read-Only Research Agent
+
+```markdown
+---
+name: researcher
+description: Deep codebase research and architecture analysis
+model: sonnet
+allowed-tools:
+  - read
+  - grep
+  - glob
+---
+
+You are a research subagent specializing in codebase exploration.
+
+Your job is to thoroughly investigate a topic and report back with:
+- Relevant files and their purposes
+- Architecture patterns and dependencies
+- Code flow traces with specific line references
+
+Be exhaustive — search broadly and follow references.
+```
+
+#### Test Runner Agent
+
+```markdown
+---
+name: test-runner
+description: Runs tests and reports results
+allowed-tools:
+  - read
+  - grep
+  - glob
+  - exec
+permissions:
+  allow:
+    - Exec(npm run test)
+    - Exec(cargo nextest)
+    - Exec(pytest)
+---
+
+You are a test runner subagent. Run the relevant test suites and report:
+- Which tests passed and failed
+- Failure messages and stack traces
+- Suggestions for fixing failures
+```

@@ -1,0 +1,297 @@
+---
+title: "Lifecycle Hooks"
+description: "Understanding hook events and the data available at each stage"
+icon: "rotate"
+---
+
+Each hook event fires at a specific point in the agent's lifecycle. Use the **matcher** field (a regex) to filter which tool invocations trigger your hook.
+
+---
+
+## PreToolUse
+
+Fires **before** a tool executes. Use this to block, modify, or add context to tool calls.
+
+**Stdin data:**
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `tool_name` | Name of the tool being called | `exec`, `edit`, `mcp__github__create_issue` |
+| `tool_input` | Arguments passed to the tool | `{ "command": "rm -rf /", "shell_id": "main" }` |
+
+**Example — Block destructive commands:**
+
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "exec",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"import sys, json; data = json.load(sys.stdin); cmd = data.get('tool_input', {}).get('command', ''); sys.exit(2 if 'rm -rf' in cmd else 0)\""
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Example — Require confirmation for writes outside src/:**
+
+Use a script that inspects the tool input and returns a decision:
+
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "./scripts/check-edit-path.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## PostToolUse
+
+Fires **after** a tool finishes executing. Use this for logging, validation, or triggering follow-up actions.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `tool_name` | Name of the tool that ran |
+| `tool_input` | Arguments that were passed |
+| `tool_response` | Object with `success` (boolean), `output` (string), and `error` (string or null) |
+
+**Example — Log all shell commands:**
+
+```json
+{
+  "PostToolUse": [
+    {
+      "matcher": "exec",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "sh -c 'cat >> ~/.devin-command-log'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## PermissionRequest
+
+Fires when the agent needs a permission decision. Use this to implement custom approval logic.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `tool_name` | Tool requesting permission |
+| `tool_input` | Arguments for the tool call |
+
+**Example — Auto-approve git commands:**
+
+```json
+{
+  "PermissionRequest": [
+    {
+      "matcher": "exec",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 -c \"import sys, json; data = json.load(sys.stdin); cmd = data.get('tool_input', {}).get('command', ''); print(json.dumps({'decision': 'approve'})) if cmd.startswith('git ') else sys.exit(0)\""
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## UserPromptSubmit
+
+Fires when the user submits a message. Use this to add context or trigger workflows.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `prompt` | The user's message text |
+
+**Example — Add project context for deploy-related prompts:**
+
+```json
+{
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "./scripts/add-deploy-context.sh"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Stop
+
+Fires when the agent decides to stop (finish its turn). Use this to add follow-up instructions or prevent premature stopping.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `stop_hook_active` | Whether a stop hook is already active |
+
+**Example — Remind agent to run tests:**
+
+```json
+{
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo '{\"decision\": \"block\", \"reason\": \"Please run the test suite before stopping.\"}'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+<Warning>
+Be careful with stop hooks that block — they can cause the agent to loop if the condition isn't eventually satisfied.
+</Warning>
+
+---
+
+## PostCompaction
+
+Fires **after** context compaction completes successfully. Use this for logging, triggering follow-up actions, or re-injecting context that may have been lost during compaction.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `summary` | Summary text produced by the compactor (may be null if no summary was generated) |
+
+**Example — Log compaction events:**
+
+```json
+{
+  "PostCompaction": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "sh -c 'cat >> ~/.devin-compaction-log'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## SessionStart
+
+Fires when a new session begins. Use this for initialization, logging, or environment setup.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `source` | How the session was started |
+
+**Example — Run setup script:**
+
+```json
+{
+  "SessionStart": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "./scripts/dev-setup.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## SessionEnd
+
+Fires when a session ends. Use this for cleanup or final logging.
+
+**Stdin data:**
+
+| Field | Description |
+|-------|-------------|
+| `reason` | Why the session ended |
+
+---
+
+## Matching Multiple Events
+
+A single hooks file can define hooks for multiple events:
+
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "",
+      "hooks": [
+        { "type": "command", "command": "./scripts/audit.sh" }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "",
+      "hooks": [
+        { "type": "command", "command": "./scripts/audit.sh" }
+      ]
+    }
+  ]
+}
+```
+
+## Using the Matcher
+
+The `matcher` field is a **regex** matched against the tool name:
+
+| Matcher | Matches |
+|---------|---------|
+| `""` (empty) | All tools |
+| `"exec"` | The `exec` tool |
+| `"exec\|edit"` | `exec` or `edit` |
+| `"mcp__.*"` | All MCP tools |

@@ -1,0 +1,345 @@
+---
+title: "Commands & Flags"
+description: "Complete reference for command arguments, subcommands, and interactive slash commands"
+icon: "terminal"
+---
+
+## Usage
+
+```bash
+devin [OPTIONS] [prompt]
+```
+
+Pass an optional prompt to start a session with an initial message, or launch interactively with no arguments.
+
+You can also read these from your terminal with `man devin`.
+
+---
+
+## Global Flags
+
+| Flag | Short | Description |
+| --- | --- | --- |
+| `--model <MODEL>` |  | Set the AI model for this session |
+| `--permission-mode <MODE>` |  | Permission mode (`normal`, `dangerous`, `bypass`) |
+| `--continue` | `-c` | Resume the most recent session in the current directory |
+| `--resume <SESSION_ID>` | `-r` | Resume a specific session by ID |
+| `--print [PROMPT]` | `-p` | Print response and exit (non-interactive mode). Optionally accepts an inline prompt. |
+| `--prompt-file <FILE>` |  | Load the initial prompt from a file |
+| `--config <PATH>` |  | Configuration file path |
+| `--respect-workspace-trust` |  | Whether to respect workspace trust settings |
+
+**Examples:**
+
+```bash
+devin -- add a login page
+devin --model opus -- refactor the auth module
+devin -c                              # Resume last session
+devin -r abc12345                     # Resume specific session
+devin -p "list all TODO comments"    # Print response and exit
+devin -p -- list all TODO comments    # Same, using -- separator (still works)
+```
+
+---
+
+## Subcommands
+
+### devin auth
+
+Authentication related commands.
+
+| Command | Description |
+| --- | --- |
+| `devin auth login` | Log in to your account |
+| `devin auth logout` | Log out and remove stored credentials |
+| `devin auth status` | Check authentication status |
+
+**Options for `devin auth login`:**
+
+- `--force-manual-token-flow` — Skip browser-based auth and manually paste a token (useful for remote/SSH sessions)
+
+### devin mcp
+
+Connect and log in to Model Context Protocol servers.
+
+| Command | Description |
+| --- | --- |
+| `devin mcp add <name>` | Add a new MCP server |
+| `devin mcp list` | List all configured MCP servers |
+| `devin mcp get <name>` | Show details for a specific MCP server |
+| `devin mcp remove <name>` | Remove a configured MCP server |
+| `devin mcp login <name>` | Authenticate with an MCP server via OAuth |
+| `devin mcp logout <name>` | Remove stored OAuth credentials for an MCP server |
+
+**Options for `devin mcp add`:**
+
+- `-t, --transport <stdio|http>` — Transport type (optional; inferred from URL → http, trailing args → stdio)
+- `-s, --scope <local|project|user>` — Configuration scope (default: `local`)
+- `--url <URL>` — URL for HTTP transport (can also be passed as a positional argument after the name)
+- `--command <CMD>` — Command for stdio transport (optional when trailing args are provided)
+- `-e, --env <KEY=VALUE>` — Environment variables (repeatable)
+- `-H, --header <HEADER: VALUE>` — HTTP headers (repeatable)
+- `--scopes <SCOPE,SCOPE>` — OAuth scopes to request (comma-separated)
+- `<URL>` — Positional URL argument for HTTP (alternative to `--url`)
+- `-- <COMMAND> [ARGS...]` — Command and arguments for stdio (first arg is the command when `--command` is omitted)
+
+<Note>
+  Legacy SSE transport is not supported. See [MCP Configuration → Legacy SSE is not supported](/extensibility/mcp/configuration#legacy-sse-is-not-supported).
+</Note>
+
+**Examples:**
+
+```bash
+# stdio server
+devin mcp add my-server -- npx @company/mcp-server --port 3000
+
+# HTTP server (positional URL)
+devin mcp add notion https://mcp.notion.com/mcp
+devin mcp add --transport http datadog-mcp https://mcp.datadoghq.com/api/unstable/mcp-server/mcp
+
+# HTTP server (--url flag, also works)
+devin mcp add notion --url https://mcp.notion.com/mcp
+
+# With environment variables and scope
+devin mcp add -e GITHUB_TOKEN=ghp_xxx github -- npx -y @modelcontextprotocol/server-github
+devin mcp add -s project sentry https://mcp.sentry.dev/mcp
+```
+
+**Options for `devin mcp remove`:**
+
+- `-s, --scope <local|project|user>` — Configuration scope (default: `local`)
+
+**Options for `devin mcp login`:**
+
+- `--scopes <SCOPE,SCOPE>` — OAuth scopes to request (comma-separated)
+
+See [MCP Configuration](/extensibility/mcp/configuration) for details.
+
+### devin rules
+
+Manage agent rules (always-on context blobs).
+
+| Command | Description |
+| --- | --- |
+| `devin rules list` | List all available rules |
+| `devin rules show <name>` | Show details for a specific rule |
+| `devin rules paths` | Show rule directory locations |
+
+**Options for `devin rules list`:**
+
+- `--provider <cursor\|windsurf>` — Filter by rule provider
+
+See [Rules](/extensibility/rules) for details.
+
+### devin skills
+
+Manage agent skills (slash commands and agent-triggered context blobs).
+
+| Command | Description |
+| --- | --- |
+| `devin skills list` | List all available skills |
+| `devin skills show <name>` | Show details for a specific skill |
+| `devin skills paths` | Show skill directory locations |
+
+**Options for `devin skills list`:**
+
+- `--trigger <user\|model>` — Filter by trigger type
+
+See [Skills](/extensibility/skills/overview) for details.
+
+### devin list
+
+List sessions in the current directory. Alias: `devin ls`
+
+| Command | Description |
+| --- | --- |
+| `devin list` | Interactive session picker (default) |
+| `devin list --format json` | Output sessions as JSON |
+| `devin list --format csv` | Output sessions as CSV |
+
+### devin version
+
+Print the current version and exit.
+
+```bash
+devin version
+```
+
+This is equivalent to `devin --version`.
+
+### devin acp
+
+Run Devin as an [Agent Client Protocol (ACP)](https://agentclientprotocol.com/) server over stdio. This subcommand is intended to be invoked by an ACP-aware editor or IDE (such as Windsurf or Zed) as a subprocess — it speaks JSON-RPC over stdin/stdout and is not meant to be run interactively.
+
+```bash
+devin acp
+```
+
+The ACP server reads credentials from `WINDSURF_API_KEY` if set, otherwise from the credentials stored by `devin auth login`. It can also accept credentials at runtime via the ACP `authenticate` request.
+
+### devin update
+
+Check for updates and optionally install them.
+
+```bash
+devin update
+```
+
+Use `--force` to re-install even if already on the latest version:
+
+```bash
+devin update --force
+```
+
+### devin shell
+
+[Feature Preview] Shell integration commands. See [Shell Integration](/shell-integration) for full details.
+
+| Command | Description |
+| --- | --- |
+| `devin shell setup` | Install shell integration into your shell config file |
+| `devin shell setup <shell>` | Install for a specific shell (`bash`, `zsh`, or `fish`) |
+
+### devin setup
+
+Interactive setup wizard for authentication and MCP configuration.
+
+```bash
+devin setup
+devin setup --force-manual-token-flow  # For remote/SSH sessions
+```
+
+### devin uninstall
+
+Uninstall Devin for Terminal and optionally remove all data.
+
+| Option | Description |
+| --- | --- |
+| `--clean` | Remove all data including configuration, history, and custom data |
+| `--force` | Skip confirmation prompt |
+
+---
+
+## Slash Commands
+
+These commands are available inside an interactive session. Type them at the prompt.
+
+### Mode & Model
+
+| Command | Description |
+| --- | --- |
+| `/mode [normal|accept-edits|plan|bypass]` | Show or switch the current mode (`autonomous` is available in sandbox sessions) |
+| `/normal` | Switch to Normal mode (default) |
+| `/accept-edits` | Switch to Accept Edits mode (auto-approve file edits in workspace) |
+| `/plan` | Switch to Plan mode (read-only planning) |
+| `/ask <question>` | Ask a question without making code changes (oneshot) |
+| `/bypass` | Switch to Bypass mode (auto-approve all actions) |
+| `/model [name]` | Show or change the current model |
+| `/theme [dark\|light\|terminal-dark\|terminal-light\|no-color]` | Switch between themes (dark, light, terminal dark, terminal light, no color) |
+
+<Note>
+  `/bypass` has aliases `/yolo` and `/dangerous`. All three do the same thing.
+</Note>
+
+### Session Management
+
+| Command | Description |
+| --- | --- |
+| `/clear` | Clear conversation history and start a new session. Alias: `/new` |
+| `/continue [session-id]` | Resume a previous session |
+| `/fork [step]` | Fork the current session to a new session. Optionally fork from a specific step (see `/steps`). |
+| `/steps` | List conversation steps (use with `/fork` and `/revert`) |
+| `/revert <step>` | Revert file changes from a specific step onwards and rewind the conversation to before that step |
+| `/resume [session-id]` | Open the interactive session picker, or resume a specific session by ID |
+| `/ls [--all]` | List recent sessions (current directory only by default). Alias: `/list-sessions` |
+| `/rename-session <new title>` | Rename the current session |
+| `/rm-session <session-id>` | Irreversibly delete a session and all its data |
+| `/exit` | Exit the application (alias: `/quit`). You can also type `exit` or `quit` without the `/` prefix. |
+
+### Workspace
+
+| Command | Description |
+| --- | --- |
+| `/workspace` | List workspace directories (alias: `/workspaces`) |
+| `/add-dir <path>` | Add an additional workspace directory |
+| `/undo-add-dir <path>` | Remove a workspace directory |
+
+### Automation
+
+| Command | Description |
+| --- | --- |
+| `/loop <prompt>` | Run a prompt then auto-review the diff in a loop |
+| `/btw <prompt>` | Ask a quick side question. Runs a sidechain using the current conversation context and prints the answer in a box, without adding the question to the main conversation. |
+
+### Extensibility
+
+| Command | Description |
+| --- | --- |
+| `/hooks` | List all loaded hooks with their IDs, event types, and source paths |
+
+### Utilities
+
+| Command | Description |
+| --- | --- |
+| `/help` | Show available slash commands |
+| `/bug [description]` | Report a bug to the Devin for Terminal developers |
+| `/update [--force]` | Check for and install updates. Pass `--force` to re-install even when already on the latest version. |
+| `/upgrade` | Upgrade your subscription plan |
+| `/login` | Authenticate with your account |
+| `/logout` | Clear stored credentials and exit |
+| `/context` | Show context window usage |
+| `/compact` | Force conversation compaction |
+
+### Debug (insiders only)
+
+| Command | Description |
+| --- | --- |
+| `/debug-echo <json>` | Write a raw JSON-RPC body to the ACP transport (stdout). Useful for testing how ACP clients handle specific messages or error conditions. Auto-inserts `"jsonrpc": "2.0"` if missing. |
+
+---
+
+## Modes
+
+Modes control the agent's autonomy level by combining a permission mode with an agent profile.
+
+<Tabs>
+  <Tab title="Normal (default)">
+    Full autonomy for complex coding tasks. The agent can read, write, and execute commands with normal permission checks.
+
+    - **Permission mode:** Normal
+    - **Profile:** Normal
+    - **Use for:** Multi-file refactoring, feature implementation, bug fixes
+  </Tab>
+  <Tab title="Plan">
+    Planning only — the agent proposes changes without making them. Read-only tool access ensures no code is modified.
+
+    - **Permission mode:** Normal
+    - **Profile:** Plan (read-only tools)
+    - **Use for:** Architecture design, understanding codebases, planning before implementation
+  </Tab>
+  <Tab title="Bypass">
+    All permission prompts are auto-approved. The agent executes freely without asking for confirmation.
+
+    - **Permission mode:** Dangerous
+    - **Profile:** Normal
+    - **Use for:** Trusted tasks where interruptions slow you down
+
+    <Warning>
+      Use Bypass mode only for tasks you fully trust. All tool calls (including destructive commands) are auto-approved.
+    </Warning>
+  </Tab>
+</Tabs>
+
+Cycle between modes with `/mode`, or switch directly with `/normal`, `/accept-edits`, `/plan`, or `/bypass`. Use `/ask <question>` as a oneshot command to ask questions without switching modes.
+
+---
+
+## Profiles
+
+Profiles determine the agent's available tools and behavior. Profiles are automatically set when you switch modes.
+
+| Profile | Description | Tool Access |
+| --- | --- | --- |
+| `normal` | Full coding assistant (used by Normal, Accept Edits, and Bypass modes) | All tools |
+| `plan` | Structured planning workflow (used by Plan mode) | Read-only tools (grep, glob, read, todo, ask\_user\_question, exit\_plan\_mode) |
+| `ask` | Question answering (used by the `/ask` command) | Read-only tools (grep, glob, read, todo, ask\_user\_question) |

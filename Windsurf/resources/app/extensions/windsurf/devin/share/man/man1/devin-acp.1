@@ -1,0 +1,24 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH devin-acp 1  "acp " 
+.SH NAME
+devin\-acp \- Run as an ACP (Agent Client Protocol) server over stdio
+.SH SYNOPSIS
+\fBdevin acp\fR [\fB\-\-agent\-type\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Run as an ACP (Agent Client Protocol) server over stdio
+.SH OPTIONS
+.TP
+\fB\-\-agent\-type\fR \fI<AGENT_TYPE>\fR
+The type of agent to run. When omitted, runs the default agent
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+summarizer: A summarizer agent with no tools. The model outputs the full summary as text and a `PostAgentIteration` cog persists it to `~/.local/share/devin/summaries/<session_id>.md` (i.e. `$XDG_DATA_HOME/devin/summaries/`)
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

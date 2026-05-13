@@ -1,0 +1,48 @@
+---
+title: "Keyboard Shortcuts"
+description: "Common keyboard shortcuts in Devin for Terminal"
+icon: "keyboard"
+---
+
+## Input Shortcuts
+
+These shortcuts work while typing at the prompt.
+
+| Shortcut | Description |
+| --- | --- |
+| `Enter` | Submit your message |
+| `Shift+Enter`\* or `Alt+Enter` | Insert a newline (for multi-line input) |
+| `Shift+Tab` | Cycle between modes (Normal, Accept Edits, Plan, Bypass, Autonomous) |
+| `Ctrl+C` | Cancel current input (clears text), or cancel running agent |
+| `Ctrl+D` | Exit (when input is empty) |
+| `Esc` | Cancel running agent |
+| `Ctrl+G` | Open external editor for composing your message |
+| `Ctrl+R` | Open fuzzy search over previous prompts and insert the selected prompt |
+| `Ctrl+O` | Open full-screen viewer for the thinking trace |
+| `Ctrl+L` | Redraw / refresh the screen |
+| `Ctrl+V` or `Shift+Insert` | Paste from clipboard (images appear in input area; use Left/Right to navigate, Backspace to remove) |
+| `!` | Enter bash mode to run a shell command directly (when input is empty). Press `Backspace` or `Esc` on an empty input to exit bash mode |
+| `@` | Open file/directory autocomplete to add context |
+
+<Note>
+  On macOS, `Alt` is the `Option` key. Some shortcuts below use `Alt` (Option) as a modifier. We recommend [configuring Option as Meta](/reference/terminal-compatibility#configuring-option-as-meta-on-macos) for the best experience.
+</Note>
+
+\* Requires a [compatible terminal](/reference/terminal-compatibility). Terminals that do not support the Kitty keyboard protocol cannot distinguish `Shift+Enter` from `Enter`. Use `Alt+Enter` or `Ctrl+J` instead.
+
+---
+
+## Mode & Model Shortcuts
+
+| Shortcut | Description |
+| --- | --- |
+| `Shift+Tab` | Cycle to the next mode (Normal → Accept Edits → Plan → Bypass → Autonomous → Normal) |
+| `Alt+T` (macOS: `Opt+T`) | Cycle thinking level for the current model |
+
+You can also switch modes with slash commands: `/normal`, `/plan`, `/bypass`, or `/mode <name>`. Use `/ask <question>` as a oneshot command to ask questions without switching modes.
+
+---
+
+## Text Editing
+
+The input uses readline-style or Emacs-style keybindings for text editing.

@@ -1,0 +1,124 @@
+---
+title: "Shell Integration [Feature Preview]"
+description: "Wrap your shell with Devin to invoke it instantly and give Devin visibility into your recent commands."
+icon: "square-terminal"
+---
+
+<Info>
+  Shell integration is a **Feature Preview**. It is available on macOS, Linux, and WSL with Bash, Zsh, and Fish. Shell integration is not yet supported on Windows (PowerShell or CMD). You can still run Devin for Terminal on Windows — this feature just isn't available there yet. It is feature complete but may interact poorly with other shell functionality. If you run into something incompatible please let us know!
+</Info>
+
+Shell integration wraps your existing shell session so that Devin runs alongside it. Once set up, you can:
+
+- Hit **Ctrl+G** (configurable) anywhere in your shell to invoke Devin with your current command line as context
+- Type `# <message>` and press Enter to pass it straight to Devin (Zsh only)
+- Give Devin automatic visibility into your recent shell commands and their output
+
+We strongly recommend using `zsh` over `bash` or `fish` for best support.
+
+---
+
+## Setup
+
+Run the setup command to install shell integration into your shell config file:
+
+```bash
+devin shell setup
+```
+
+This adds managed blocks to your shell rc file (`~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`). Then restart your terminal or source the config:
+
+<Tabs>
+  <Tab title="Bash">
+    ```bash
+    source ~/.bashrc
+    ```
+  </Tab>
+  <Tab title="Zsh">
+    ```bash
+    source ~/.zshrc
+    ```
+  </Tab>
+  <Tab title="Fish">
+    ```fish
+    source ~/.config/fish/config.fish
+    ```
+  </Tab>
+</Tabs>
+
+You can also target a specific shell explicitly:
+
+```bash
+devin shell setup bash
+devin shell setup zsh
+devin shell setup fish
+```
+
+<Note>
+  Shell integration is separate from the `devin setup` wizard. Running `devin setup` does **not** install shell integration — you must run `devin shell setup` separately.
+</Note>
+
+---
+
+## Features
+
+![Shell integration demo](./assets/devin4terminal.mp4)
+
+### Ctrl+G shortcut (configurable)
+
+Hit **Ctrl+G** anywhere in your shell to invoke Devin. Whatever you've typed on the current line is passed to Devin as context, along with your recent shell history.
+
+```bash
+$ git status   # type this, then hit Ctrl+G instead of Enter
+# Devin opens with "git status" as context + your recent shell history
+```
+
+This works in Bash, Zsh, and Fish.
+
+### Comment syntax (Zsh only)
+
+In Zsh, start a line with `#`, type a natural-language message, and press Enter. Devin receives your comment as the prompt.
+
+```bash
+$ # explain what this directory contains
+# Devin opens with your comment as the prompt
+```
+
+<Note>
+  Comment syntax requires Zsh's `INTERACTIVE_COMMENTS` option, which shell integration enables automatically.
+</Note>
+
+### Shell history context
+
+When invoked via Ctrl+G or comment syntax, Devin can see your recent shell commands *including their output*. This gives Devin context about what you've been doing, so it can provide more relevant help without you needing to explain.
+
+---
+
+## Removing shell integration
+
+To remove shell integration, delete the managed blocks from your shell config file (`~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`). Look for lines between `BEGIN MANAGED` and `END MANAGED` markers and remove that entire block. Then restart your terminal.
+
+---
+
+## Configuration
+
+Configure shell integration behavior in your [config file](/reference/configuration/config-file):
+
+```json
+// ~/.config/devin/config.json
+{
+  "shell": {
+    "keybinding_trigger": "C-g",
+    "enable_comments": true
+  }
+}
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `shell.keybinding_trigger` | `"C-g"` | Keybinding to trigger Devin from the shell. Use `C-` prefix for Ctrl (e.g., `"C-g"` for Ctrl+G). Set to `null` to disable. |
+| `shell.enable_comments` | `true` | Enable `# comment` syntax in Zsh to send messages to Devin. |
+
+<Note>
+  After changing configuration, run `devin shell setup` again and restart your terminal for changes to take effect.
+</Note>
