@@ -39,6 +39,11 @@ function App() {
 
   // 역할 배정
   const assignRoles = (playerList) => {
+    if (!playerList || playerList.length === 0) {
+      console.error('Invalid player list');
+      return;
+    }
+
     const roles = [];
     const playerCount = playerList.length;
 
