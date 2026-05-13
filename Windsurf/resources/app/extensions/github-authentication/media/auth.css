@@ -1,0 +1,147 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+:root {
+	/* Dark theme colors (default) */
+	--vscode-foreground: #CCCCCC;
+	--vscode-editor-background: #1F1F1F;
+	--vscode-error-foreground: #F85149;
+	--vscode-textLink-foreground: #4daafc;
+
+	--vscode-filter-0: drop-shadow(0 0 0 rgba(0, 122, 204, 0));
+	--vscode-filter-50: drop-shadow(0 4px 12px rgba(0, 122, 204, 0.15));
+	--vscode-filter-70: drop-shadow(0 6px 18px rgba(0, 122, 204, 0.25));
+	--vscode-filter-100: drop-shadow(0 8px 24px rgba(0, 122, 204, 0.3));
+
+	--vscode-insiders-filter-0: drop-shadow(0 0 0 rgba(36, 191, 165, 0));
+	--vscode-insiders-filter-50: drop-shadow(0 4px 12px rgba(36, 191, 165, 0.15));
+	--vscode-insiders-filter-70: drop-shadow(0 6px 18px rgba(36, 191, 165, 0.25));
+	--vscode-insiders-filter-100: drop-shadow(0 8px 24px rgba(36, 191, 165, 0.3));
+}
+
+/* Light theme colors */
+@media (prefers-color-scheme: light) {
+	:root {
+		--vscode-foreground: #3B3B3B;
+		--vscode-editor-background: #FFFFFF;
+		--vscode-error-foreground: #F85149;
+		--vscode-textLink-foreground: #005FB8;
+	}
+}
+
+html {
+	height: 100%;
+}
+
+body {
+	box-sizing: border-box;
+	min-height: 100%;
+	margin: 0;
+	padding: 15px 30px;
+	display: flex;
+	flex-direction: column;
+	color: var(--vscode-foreground);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif;
+	background-color: var(--vscode-editor-background);
+}
+
+.branding {
+	background-image: url('data:image/png;base64,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');
+	background-size: 24px;
+	background-repeat: no-repeat;
+	background-position: left center;
+	padding-left: 36px;
+	font-size: 20px;
+	letter-spacing: -0.04rem;
+	font-weight: 400;
+	color: white;
+	text-decoration: none;
+}
+
+a {
+	color: var(--vscode-textLink-foreground);
+}
+
+a:hover, a:focus {
+	text-decoration: underline;
+}
+
+.container {
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
+.icon-container {
+	margin-bottom: 24px;
+}
+
+@keyframes rise-and-glow {
+	0% {
+		opacity: 0;
+		transform: translateY(15px) scale(0.95);
+		filter: var(--vscode-filter-0);
+	}
+
+	50% {
+		opacity: 0.8;
+		transform: translateY(-2px) scale(1.02);
+		filter: var(--vscode-filter-50);
+	}
+
+	70% {
+		opacity: 1;
+		transform: translateY(1px) scale(0.99);
+		filter: var(--vscode-filter-70);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: var(--vscode-filter-100);
+	}
+}
+
+.vscode-icon {
+	width: 128px;
+	height: 128px;
+	animation: rise-and-glow 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.title {
+	font-size: 28px;
+	font-weight: 300;
+	margin: 0 0 12px 0;
+	color: var(--vscode-foreground);
+}
+
+.subtitle {
+	font-size: 18px;
+	font-weight: 300;
+	color: var(--vscode-foreground);
+	opacity: 0.7;
+	margin: 0 0 36px 0;
+}
+
+.detail {
+	font-size: 14px;
+	color: var(--vscode-foreground);
+	opacity: 0.7;
+	margin: 0;
+}
+
+body.error .detail {
+	color: var(--vscode-error-foreground);
+}
+
+body.error .success-message {
+	display: none;
+}
+
+body:not(.error) .error-message {
+	display: none;
+}
