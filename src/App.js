@@ -41,20 +41,20 @@ function App() {
   const assignRoles = (playerList) => {
     const roles = [];
     const playerCount = playerList.length;
-    
+
     // 역할 배정 로직
     let mafiaCount = Math.max(1, Math.floor(playerCount / 4));
     let spyCount = playerCount >= 4 ? 1 : 0;
     let agentCount = playerCount >= 6 ? 1 : 0;
-    
+
     for (let i = 0; i < mafiaCount; i++) roles.push(ROLES.MAFIA);
     for (let i = 0; i < spyCount; i++) roles.push(ROLES.SPY);
     for (let i = 0; i < agentCount; i++) roles.push(ROLES.AGENT);
     while (roles.length < playerCount) roles.push(ROLES.CITIZEN);
-    
+
     // 역할 섞기
     const shuffledRoles = roles.sort(() => Math.random() - 0.5);
-    
+
     const updatedPlayers = playerList.map((player, index) => ({
       ...player,
       role: shuffledRoles[index],
@@ -62,7 +62,7 @@ function App() {
       votes: 0,
       spyPoints: 0
     }));
-    
+
     setPlayers(updatedPlayers);
     setCurrentPlayer(updatedPlayers[0]); // 첫 번째 플레이어를 현재 플레이어로 설정
   };
@@ -80,60 +80,82 @@ function App() {
     const states = ['피 묻은', '부서진', '닫힌', '열린', '뒤틀린', '녹은'];
     const emotions = ['비명', '웃음소리', '흐느낌', '침묵', '고함', '속삭임'];
     const sounds = ['쾅', '드르륵', '찰칵', '휙', '콰당탕', '삐걱'];
-    
+
     const realLocation = locations[Math.floor(Math.random() * locations.length)];
-    const realClues = [
-      objects[Math.floor(Math.random() * objects.length)],
-      states[Math.floor(Math.random() * states.length)],
-      emotions[Math.floor(Math.random() * emotions.length)],
-      sounds[Math.floor(Math.random() * sounds.length)]
+    const allClues = [
+      ...objects,
+      ...states,
+      ...emotions,
+      ...sounds
     ];
-    
-    const fakeLocation = locations.filter(loc => loc !== realLocation)[Math.floor(Math.random() * (locations.length - 1))];
-    
-    const updatedPlayers = players.map(player => {
-      if (player.role === ROLES.MAFIA) {
-        // 마피아는 가짜 장소와 진짜 단서 1개, 가짜 단서 1개
-        const realClue = realClues[Math.floor(Math.random() * 2)]; // 첫 2개 중 하나
-        const fakeClues = [objects, states, emotions, sounds].map(arr => 
-          arr[Math.floor(Math.random() * arr.length)]
-        ).filter(clue => !realClues.includes(clue));
-        
-        return {
-          ...player,
-          briefing: {
-            location: fakeLocation,
-            clues: [realClue, fakeClues[Math.floor(Math.random() * fakeClues.length)]]
-          }
-        };
-      } else {
-        // 시민 진영은 진짜 장소와 진짜 단서 2개
-        const selectedClues = [];
-        const clueIndices = [];
-        while (selectedClues.length < 2) {
-          const index = Math.floor(Math.random() * realClues.length);
-          if (!clueIndices.includes(index)) {
-            clueIndices.push(index);
-            selectedClues.push(realClues[index]);
-          }
+
+    if (round === 1) {
+      // 1라운드: 각자 다른 단서 배분
+      const realClues = [
+        objects[Math.floor(Math.random() * objects.length)],
+        states[Math.floor(Math.random() * states.length)],
+        emotions[Math.floor(Math.random() * emotions.length)],
+        sounds[Math.floor(Math.random() * sounds.length)]
+      ];
+
+      const fakeLocations = locations.filter(loc => loc !== realLocation);
+
+      const updatedPlayers = players.map((player, index) => {
+        if (player.role === ROLES.MAFIA) {
+          // 마피아: 각자 다른 가짜 장소
+          const fakeLocation = fakeLocations[index % fakeLocations.length];
+
+          return {
+            ...player,
+            briefing: {
+              location: fakeLocation,
+              clues: [],
+              roundType: 'first'
+            }
+          };
+        } else {
+          // 시민: 진짜 장소 + 각자 다른 진짜 단서 1개
+          const clueIndex = index % realClues.length;
+
+          return {
+            ...player,
+            briefing: {
+              location: realLocation,
+              clues: [realClues[clueIndex]],
+              roundType: 'first'
+            }
+          };
         }
-        
-        return {
-          ...player,
-          briefing: {
-            location: realLocation,
-            clues: selectedClues
-          }
-        };
-      }
-    });
-    
-    setPlayers(updatedPlayers);
-    setGameData({
-      realLocation,
-      realClues,
-      fakeLocation
-    });
+      });
+
+      setPlayers(updatedPlayers);
+      setGameData({
+        realLocation,
+        realClues,
+        fakeLocations,
+        roundType: 'first'
+      });
+    } else {
+      // 2라운드 이후: 모두에게 동일한 추가 단서
+      const additionalClue = allClues[Math.floor(Math.random() * allClues.length)];
+
+      const updatedPlayers = players.map(player => ({
+        ...player,
+        briefing: {
+          location: player.briefing?.location || realLocation,
+          clues: [...(player.briefing?.clues || []), additionalClue],
+          roundType: 'subsequent',
+          discoveryMessage: "누군가가 사건의 실마리를 발견하였습니다."
+        }
+      }));
+
+      setPlayers(updatedPlayers);
+      setGameData({
+        ...gameData,
+        additionalClue,
+        roundType: 'subsequent'
+      });
+    }
   };
 
   // 투표 처리
@@ -144,7 +166,7 @@ function App() {
       }
       return player;
     });
-    
+
     setPlayers(updatedPlayers);
   };
 
@@ -153,14 +175,14 @@ function App() {
     const alivePlayers = players.filter(p => p.isAlive);
     const maxVotes = Math.max(...alivePlayers.map(p => p.votes));
     const threshold = Math.floor(alivePlayers.length / 2) + 1;
-    
+
     if (maxVotes >= threshold) {
       const eliminated = alivePlayers.find(p => p.votes === maxVotes);
-      const updatedPlayers = players.map(player => 
+      const updatedPlayers = players.map(player =>
         player.id === eliminated.id ? { ...player, isAlive: false } : player
       );
       setPlayers(updatedPlayers);
-      
+
       // 승리 조건 체크
       checkWinCondition(updatedPlayers);
     } else {
@@ -175,22 +197,22 @@ function App() {
     const aliveMafia = alivePlayers.filter(p => p.role === ROLES.MAFIA);
     const aliveCitizens = alivePlayers.filter(p => p.role !== ROLES.MAFIA);
     const spyWin = alivePlayers.find(p => p.spyPoints >= 4);
-    
+
     if (spyWin) {
       setGamePhase(GAME_PHASES.RESULT);
       return;
     }
-    
+
     if (aliveMafia.length === 0) {
       setGamePhase(GAME_PHASES.RESULT);
       return;
     }
-    
+
     if (aliveMafia.length >= aliveCitizens.length) {
       setGamePhase(GAME_PHASES.RESULT);
       return;
     }
-    
+
     nextRound();
   };
 
@@ -224,43 +246,43 @@ function App() {
         {gamePhase === GAME_PHASES.SETUP && (
           <GameSetup onGameStart={initializeGame} />
         )}
-        
+
         {gamePhase === GAME_PHASES.LOBBY && (
-          <GameLobby 
-            players={players} 
+          <GameLobby
+            players={players}
             onStartGame={startGame}
             onSwitchPlayer={switchPlayer}
             currentPlayer={currentPlayer}
           />
         )}
-        
+
         {gamePhase === GAME_PHASES.BRIEFING && (
-          <ClueBriefing 
+          <ClueBriefing
             currentPlayer={currentPlayer}
             onNextPhase={() => setGamePhase(GAME_PHASES.DISCUSSION)}
           />
         )}
-        
+
         {gamePhase === GAME_PHASES.DISCUSSION && (
-          <GameBoard 
+          <GameBoard
             players={players}
             currentPlayer={currentPlayer}
             onSwitchPlayer={switchPlayer}
             onStartVoting={() => setGamePhase(GAME_PHASES.VOTING)}
           />
         )}
-        
+
         {gamePhase === GAME_PHASES.VOTING && (
-          <VotingPhase 
+          <VotingPhase
             players={players}
             currentPlayer={currentPlayer}
             onVote={handleVote}
             onExecute={executeElimination}
           />
         )}
-        
+
         {gamePhase === GAME_PHASES.RESULT && (
-          <GameResult 
+          <GameResult
             players={players}
             onRestart={() => {
               setGamePhase(GAME_PHASES.SETUP);

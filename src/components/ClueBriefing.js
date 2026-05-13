@@ -25,13 +25,13 @@ const ClueBriefing = ({ currentPlayer, onNextPhase }) => {
     return <div>로딩 중...</div>;
   }
 
-  const { location, clues } = currentPlayer.briefing;
+  const { location, clues, roundType, discoveryMessage } = currentPlayer.briefing;
 
   return (
-    <div className="clue-briefing fade-in">
+    <div className={`clue-briefing fade-in ${roundType === 'subsequent' ? 'subsequent-round' : ''}`}>
       <div className="card briefing-card">
         <h2 className="card-title">📋 사건 브리핑</h2>
-        
+
         <div className="briefing-header">
           <div className="classification">
             <span className="classification-stamp">🔒 기밀</span>
@@ -44,37 +44,62 @@ const ClueBriefing = ({ currentPlayer, onNextPhase }) => {
 
         <div className="briefing-content">
           <div className="mission-title">
-            <h3>🌙 어젯밤 끔찍한 사건</h3>
-            <p>첩보국 내부에서 발생한 비극적인 사건에 대한 기밀 정보입니다.</p>
+            <h3>
+              {roundType === 'first' ? '🌙 어젯밤 끔찍한 사건' : '🔍 새로운 단서 발견'}
+            </h3>
+            <p>
+              {roundType === 'first'
+                ? '첩보국 내부에서 발생한 비극적인 사건에 대한 기밀 정보입니다.'
+                : discoveryMessage || '새로운 단서가 발견되었습니다.'}
+            </p>
           </div>
 
           {!showClues ? (
             <div className="briefing-loading">
               <div className="loading-spinner"></div>
               <p>🔐 보안 인증 중...</p>
-              <p className="loading-hint">기밀 정보에 접근하기 위해 신원 확인을 진행합니다</p>
+              <p className="loading-hint">
+                {roundType === 'first'
+                  ? '기밀 정보에 접근하기 위해 신원 확인을 진행합니다'
+                  : '새로운 단서를 분석 중입니다...'}
+              </p>
             </div>
           ) : (
             <div className="clues-reveal slide-in">
-              <div className="clue-section">
-                <h4>📍 사건 장소</h4>
-                <div className="clue-item location-clue">
-                  <span className="clue-icon">🏢</span>
-                  <span className="clue-text">{location}</span>
+              {roundType === 'first' && (
+                <div className="clue-section">
+                  <h4>📍 사건 장소</h4>
+                  <div className="clue-item location-clue">
+                    <span className="clue-icon">🏢</span>
+                    <span className="clue-text">{location}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="clue-section">
-                <h4>🔍 발견된 단서</h4>
-                <div className="clues-grid">
-                  {clues.map((clue, index) => (
-                    <div key={index} className="clue-item">
-                      <span className="clue-icon">🔍</span>
-                      <span className="clue-text">{clue}</span>
-                    </div>
-                  ))}
+              {clues.length > 0 && (
+                <div className="clue-section">
+                  <h4>
+                    {roundType === 'first' ? '🔍 발견된 단서' : '🔍 새로운 단서'}
+                  </h4>
+                  <div className="clues-grid">
+                    {clues.map((clue, index) => (
+                      <div key={index} className="clue-item">
+                        <span className="clue-icon">🔍</span>
+                        <span className="clue-text">{clue}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {roundType === 'subsequent' && (
+                <div className="discovery-announcement">
+                  <div className="announcement-content">
+                    <span className="announcement-icon">🔍</span>
+                    <span className="announcement-text">{discoveryMessage}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="briefing-instructions">
                 <h4>📝 임무 지시</h4>
