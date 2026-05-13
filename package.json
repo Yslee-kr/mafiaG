@@ -9,7 +9,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "deploy-main": "npm run build && git add build && git commit -m 'Build for GitHub Pages' && git subtree push --prefix build origin main"
   },
   "dependencies": {
     "react": "^18.2.0",
