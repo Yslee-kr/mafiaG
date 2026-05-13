@@ -1,0 +1,21 @@
+/* Workflow Editor Specific Styles */
+
+/* Input messages container - workflow specific margin */
+.input-messages {
+  margin-top: 2px;
+}
+
+/* Option descriptions container */
+.option-descriptions {
+  display: flex;
+  align-items: center;
+  min-height: 36px; /* Match dropdown height */
+  padding-left: 0px;
+}
+
+/* Option description styling */
+.option-description {
+  display: none;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}

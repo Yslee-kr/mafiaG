@@ -1,0 +1,106 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Devin for Terminal",
+  "colors": {
+    "primary": "#0294DE",
+    "light": "#21C19A",
+    "dark": "#3969CA"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "icon": "rocket",
+        "pages": [
+          "index",
+          "essential-commands",
+          "shell-integration",
+          "subagents",
+          "models",
+          "troubleshooting"
+        ]
+      },
+      {
+        "group": "Extensibility",
+        "icon": "puzzle-piece",
+        "pages": [
+          "extensibility/index",
+          "extensibility/configuration",
+          "extensibility/rules",
+          "extensibility/mcp/overview",
+          "extensibility/mcp/configuration",
+          "extensibility/skills/overview",
+          "extensibility/skills/creating-skills",
+          "extensibility/hooks/overview",
+          "extensibility/hooks/lifecycle-hooks"
+        ]
+      },
+      {
+        "group": "Enterprise",
+        "icon": "building",
+        "pages": [
+          "enterprise/devin-auth",
+          "enterprise/windsurf-auth",
+          "enterprise/team-settings"
+        ]
+      },
+      {
+        "group": "Reference",
+        "icon": "book",
+        "pages": [
+          "reference/commands",
+          "reference/keyboard-shortcuts",
+          "reference/terminal-compatibility",
+          "reference/configuration/config-file",
+          "reference/configuration/read-config-from",
+          "reference/configuration/global-vs-local",
+          "reference/permissions"
+        ]
+      },
+      {
+        "group": "Changelog",
+        "icon": "clock-rotate-left",
+        "pages": [
+          "changelog/stable",
+          "changelog/next"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/devincli-light.png",
+    "dark": "/logo/devincli-dark.png"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@devin.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Devin",
+      "href": "https://devin.ai"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "devin",
+      "windsurf"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/cognition",
+      "github": "https://github.com/CognitionAI",
+      "linkedin": "https://www.linkedin.com/company/cognition-ai-labs/"
+    }
+  }
+}

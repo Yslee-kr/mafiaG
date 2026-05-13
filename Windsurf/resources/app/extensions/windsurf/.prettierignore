@@ -1,0 +1,4 @@
+/out/
+/src/generated/
+dist/
+schemas/acp_registry.schema.json
