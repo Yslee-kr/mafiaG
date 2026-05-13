@@ -1,0 +1,18 @@
+Windsurf Editor
+
+Copyright (c) 2026, Exafunction, Inc.
+All rights reserved.
+
+License
+------------------------------------------------------------------------------------------
+See https://windsurf.com/terms-of-service-individual
+See https://windsurf.com/terms-of-service-teams
+
+Third Party Content
+------------------------------------------------------------------------------------------
+See https://windsurf.com/oss-licenses
+
+THIS SOFTWARE IS DISTRIBUTED "AS-IS" WITHOUT ANY WARRANTIES, CONDITIONS AND REPRESENTATIONS WHETHER
+EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY,
+MERCHANTABLE QUALITY, FITNESS FOR A PARTICULAR PURPOSE, DURABILITY, NON-INFRINGEMENT, PERFORMANCE AND
+THOSE ARISING BY STATUTE OR FROM CUSTOM OR USAGE OF TRADE OR COURSE OF DEALING.

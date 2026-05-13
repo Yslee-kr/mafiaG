@@ -1,0 +1,31 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH devin-shell-init 1  "init " 
+.SH NAME
+devin\-shell\-init \- Output shell integration script for eval
+.SH SYNOPSIS
+\fBdevin shell init\fR [\fB\-\-stage\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fISHELL\fR> 
+.SH DESCRIPTION
+Output shell integration script for eval
+.SH OPTIONS
+.TP
+\fB\-\-stage\fR \fI<STAGE>\fR [default: pre]
+Init stage
+
+Which part of the init script to output: pre or post.
+.br
+
+.br
+[\fIpossible values: \fRpre, post]
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fISHELL\fR>
+Shell type
+
+Options: bash, zsh, fish.
+.br
+
+.br
+[\fIpossible values: \fRbash, zsh, fish]

@@ -1,0 +1,28 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH devin-shell-run 1  "run " 
+.SH NAME
+devin\-shell\-run \- Run the shell wrapper
+.SH SYNOPSIS
+\fBdevin shell run\fR [\fB\-\-parent\fR] [\fB\-\-max\-history\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fISHELL\fR> 
+.SH DESCRIPTION
+Run the shell wrapper
+.SH OPTIONS
+.TP
+\fB\-\-parent\fR \fI<PARENT>\fR
+Parent shell to run
+.TP
+\fB\-\-max\-history\fR \fI<MAX_HISTORY>\fR [default: 50]
+Maximum commands to keep in history
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fISHELL\fR>
+Shell type
+
+Options: bash, zsh, fish.
+.br
+
+.br
+[\fIpossible values: \fRbash, zsh, fish]
