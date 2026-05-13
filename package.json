@@ -2,7 +2,7 @@
   "name": "mafia-spy-game",
   "version": "1.0.0",
   "description": "첩보국 마피아 스파이 게임 - GitHub 최적화 버전",
-  "homepage": ".",
+  "homepage": "https://yslee-kr.github.io/mafiaG",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
