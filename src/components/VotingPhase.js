@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './VotingPhase.css';
 
-const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
+const VotingPhase = ({ players, currentPlayer, onVote, onExecute, round }) => {
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [votingResults, setVotingResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60); // 1분 투표 시간
+  const [voteHackUsed, setVoteHackUsed] = useState(false);
+  const [hackedVotes, setHackedVotes] = useState([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,7 +35,7 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
       setSelectedTarget(targetId);
       setHasVoted(true);
       onVote(currentPlayer.id, targetId);
-      
+
       // 투표 결과 업데이트
       const updatedResults = [...votingResults];
       const existingResult = updatedResults.find(r => r.voterId === currentPlayer.id);
@@ -48,24 +50,61 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
         });
       }
       setVotingResults(updatedResults);
-      
+
       // 다른 플레이어 투표 시뮬레이션
       simulateOtherVotes();
+    }
+  };
+
+  const handleVoteHack = () => {
+    if (currentPlayer.role === '특수요원' && !voteHackUsed) {
+      // 특수요원 투표 해킹: 랜덤으로 2-3명의 표를 다른 사람에게 변경
+      const alivePlayers = players.filter(p => p.isAlive);
+      const hackTargets = alivePlayers
+        .filter(p => p.id !== currentPlayer.id)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, Math.min(3, alivePlayers.length - 1));
+
+      const newHackedVotes = hackTargets.map(target => {
+        const newTarget = alivePlayers.find(p => p.id !== target.id && p.id !== currentPlayer.id);
+        return {
+          originalVoterId: target.id,
+          originalVoterName: target.name,
+          newTargetId: newTarget.id,
+          newTargetName: newTarget.name
+        };
+      });
+
+      setHackedVotes(newHackedVotes);
+      setVoteHackUsed(true);
+
+      // 해킹된 표를 결과에 반영
+      const updatedResults = [...votingResults];
+      newHackedVotes.forEach(hack => {
+        const existingVote = updatedResults.find(r => r.voterId === hack.originalVoterId);
+        if (existingVote) {
+          existingVote.targetId = hack.newTargetId;
+          existingVote.targetName = hack.newTargetName;
+          existingVote.isHacked = true;
+        }
+      });
+
+      setVotingResults(updatedResults);
     }
   };
 
   const simulateOtherVotes = () => {
     const alivePlayers = players.filter(p => p.isAlive && p.id !== currentPlayer.id);
     const unvotedPlayers = alivePlayers.filter(p => !votingResults.find(r => r.voterId === p.id));
-    
+
     setTimeout(() => {
       unvotedPlayers.forEach((player, index) => {
         setTimeout(() => {
           const possibleTargets = players.filter(p => p.isAlive && p.id !== player.id);
           const randomTarget = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
-          
+
           onVote(player.id, randomTarget.id);
-          
+
           const updatedResults = [...votingResults];
           updatedResults.push({
             voterId: player.id,
@@ -81,7 +120,7 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
 
   const finishVoting = () => {
     setShowResults(true);
-    
+
     // 모든 플레이어 투표 완료 확인
     const alivePlayers = players.filter(p => p.isAlive);
     if (votingResults.length < alivePlayers.length) {
@@ -90,9 +129,9 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
       unvotedPlayers.forEach(player => {
         const possibleTargets = players.filter(p => p.isAlive && p.id !== player.id);
         const randomTarget = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
-        
+
         onVote(player.id, randomTarget.id);
-        
+
         const updatedResults = [...votingResults];
         updatedResults.push({
           voterId: player.id,
@@ -127,7 +166,7 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
     <div className="voting-phase fade-in">
       <div className="card voting-card">
         <h2 className="card-title">🗳️ 투표 단계</h2>
-        
+
         <div className="voting-header">
           <div className="timer">
             <span className={`timer-display ${timeLeft < 10 ? 'warning' : ''}`}>
@@ -176,18 +215,28 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
                 </div>
               ))}
             </div>
+
+            {currentPlayer.role === '특수요원' && !voteHackUsed && (
+              <div className="agent-hack-section">
+                <h4>💻 특수요원 능력</h4>
+                <p className="hack-description">투표를 해킹하여 다른 플레이어들의 표을 변경할 수 있습니다</p>
+                <button className="btn btn-hack" onClick={handleVoteHack}>
+                  🔓 투표 해킹 사용
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="voting-results">
             <h3>📊 투표 결과</h3>
-            
+
             <div className="results-grid">
               {players.filter(p => p.isAlive).map(player => {
                 const voteCount = getVoteCount(player.id);
                 const votePercentage = getVotePercentage(player.id);
                 const isEliminated = voteCount >= threshold;
                 const hasMaxVotes = voteCount === maxVotes && voteCount > 0;
-                
+
                 return (
                   <div
                     key={player.id}
@@ -214,7 +263,7 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
                       )}
                     </div>
                     <div className="vote-bar">
-                      <div 
+                      <div
                         className="vote-fill"
                         style={{ width: `${votePercentage}%` }}
                       ></div>
@@ -239,6 +288,14 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
                   {eliminated.length > 0 ? eliminated.map(p => p.name).join(', ') : '없음'}
                 </span>
               </div>
+              {currentPlayer.role === '스파이' && eliminated.length > 0 && (
+                <div className="spy-points-summary">
+                  <span className="spy-points-label">🎯 스파이 포인트 획득:</span>
+                  <span className="spy-points-value">
+                    {eliminated.filter(p => p.role === '마피아').length > 0 ? '+1점' : '+0점'}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="voting-actions">
@@ -252,7 +309,7 @@ const VotingPhase = ({ players, currentPlayer, onVote, onExecute }) => {
         {!showResults && (
           <div className="voting-progress">
             <div className="progress-bar">
-              <div 
+              <div
                 className="progress-fill"
                 style={{ width: `${((60 - timeLeft) / 60) * 100}%` }}
               ></div>

@@ -87,46 +87,43 @@ function App() {
     const sounds = ['쾅', '드르륵', '찰칵', '휙', '콰당탕', '삐걱'];
 
     const realLocation = locations[Math.floor(Math.random() * locations.length)];
-    const allClues = [
-      ...objects,
-      ...states,
-      ...emotions,
-      ...sounds
+    const realClues = [
+      objects[Math.floor(Math.random() * objects.length)],
+      states[Math.floor(Math.random() * states.length)],
+      emotions[Math.floor(Math.random() * emotions.length)],
+      sounds[Math.floor(Math.random() * sounds.length)]
     ];
 
+    const fakeLocations = locations.filter(loc => loc !== realLocation);
+    const fakeClues = ['가짜 단서 1', '가짜 단서 2', '가짜 단서 3', '가짜 단서 4'];
+
     if (round === 1) {
-      // 1라운드: 각자 다른 단서 배분
-      const realClues = [
-        objects[Math.floor(Math.random() * objects.length)],
-        states[Math.floor(Math.random() * states.length)],
-        emotions[Math.floor(Math.random() * emotions.length)],
-        sounds[Math.floor(Math.random() * sounds.length)]
-      ];
-
-      const fakeLocations = locations.filter(loc => loc !== realLocation);
-
+      // 1라운드: 정확한 규칙에 따른 단서 배분
       const updatedPlayers = players.map((player, index) => {
         if (player.role === ROLES.MAFIA) {
-          // 마피아: 각자 다른 가짜 장소
+          // 마피아: 가짜 장소 + 진짜 단서 1개 + 가짜 단서 1개
           const fakeLocation = fakeLocations[index % fakeLocations.length];
+          const realClue = realClues[index % realClues.length];
+          const fakeClue = fakeClues[index % fakeClues.length];
 
           return {
             ...player,
             briefing: {
               location: fakeLocation,
-              clues: [],
+              clues: [realClue, fakeClue],
               roundType: 'first'
             }
           };
         } else {
-          // 시민: 진짜 장소 + 각자 다른 진짜 단서 1개
+          // 시민 진영: 진짜 장소 + 진짜 단서 2개 (각자 다른 조각)
           const clueIndex = index % realClues.length;
+          const nextClueIndex = (index + 1) % realClues.length;
 
           return {
             ...player,
             briefing: {
               location: realLocation,
-              clues: [realClues[clueIndex]],
+              clues: [realClues[clueIndex], realClues[nextClueIndex]],
               roundType: 'first'
             }
           };
@@ -138,11 +135,12 @@ function App() {
         realLocation,
         realClues,
         fakeLocations,
-        roundType: 'first'
+        roundType: 'first',
+        specialEvents: generateSpecialEvents(round)
       });
     } else {
       // 2라운드 이후: 모두에게 동일한 추가 단서
-      const additionalClue = allClues[Math.floor(Math.random() * allClues.length)];
+      const additionalClue = realClues[Math.floor(Math.random() * realClues.length)];
 
       const updatedPlayers = players.map(player => ({
         ...player,
@@ -158,9 +156,54 @@ function App() {
       setGameData({
         ...gameData,
         additionalClue,
-        roundType: 'subsequent'
+        roundType: 'subsequent',
+        specialEvents: generateSpecialEvents(round)
       });
     }
+  };
+
+  // 특수 이벤트 생성
+  const generateSpecialEvents = (currentRound) => {
+    const events = [];
+
+    // 1라운드: 1급 기밀 해킹 (50% 확률)
+    if (currentRound === 1 && Math.random() < 0.5) {
+      events.push({
+        id: 'secret_hacking',
+        name: '1급 기밀 해킹',
+        description: '다른 플레이어의 신분을 50% 확률로 확인할 수 있습니다',
+        type: 'hacking',
+        round: currentRound
+      });
+    }
+
+    // 매 5라운드: 어둠의 거래 (신분 세탁)
+    if (currentRound % 5 === 0) {
+      events.push({
+        id: 'identity_washing',
+        name: '어둠의 거래',
+        description: '신분을 세탁할 기회가 주어집니다',
+        type: 'identity_wash',
+        round: currentRound
+      });
+    }
+
+    // 밸런스 불균형 시 피바람 이벤트
+    const alivePlayers = players.filter(p => p.isAlive);
+    const aliveMafia = alivePlayers.filter(p => p.role === ROLES.MAFIA);
+    const aliveCitizens = alivePlayers.filter(p => p.role !== ROLES.MAFIA);
+
+    if (aliveMafia.length > aliveCitizens.length / 2) {
+      events.push({
+        id: 'blood_wind',
+        name: '피바람 이벤트',
+        description: '밸런스를 위한 러시안룰렛',
+        type: 'russian_roulette',
+        round: currentRound
+      });
+    }
+
+    return events;
   };
 
   // 투표 처리
@@ -171,6 +214,14 @@ function App() {
       }
       return player;
     });
+
+    // 스파이 포인트 시스템
+    const voter = updatedPlayers.find(p => p.id === voterId);
+    const target = updatedPlayers.find(p => p.id === targetId);
+
+    if (voter.role === ROLES.SPY && target.role === ROLES.MAFIA) {
+      voter.spyPoints = (voter.spyPoints || 0) + 1;
+    }
 
     setPlayers(updatedPlayers);
   };
@@ -201,7 +252,7 @@ function App() {
     const alivePlayers = currentPlayers.filter(p => p.isAlive);
     const aliveMafia = alivePlayers.filter(p => p.role === ROLES.MAFIA);
     const aliveCitizens = alivePlayers.filter(p => p.role !== ROLES.MAFIA);
-    const spyWin = alivePlayers.find(p => p.spyPoints >= 4);
+    const spyWin = alivePlayers.find(p => (p.spyPoints || 0) >= 4);
 
     if (spyWin) {
       setGamePhase(GAME_PHASES.RESULT);
@@ -274,6 +325,8 @@ function App() {
             currentPlayer={currentPlayer}
             onSwitchPlayer={switchPlayer}
             onStartVoting={() => setGamePhase(GAME_PHASES.VOTING)}
+            gameData={gameData}
+            round={round}
           />
         )}
 
@@ -283,6 +336,7 @@ function App() {
             currentPlayer={currentPlayer}
             onVote={handleVote}
             onExecute={executeElimination}
+            round={round}
           />
         )}
 

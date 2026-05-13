@@ -342,39 +342,100 @@
     gap: 1rem;
     text-align: center;
   }
-  
+
   .voting-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  
+
   .voting-target {
     padding: 1rem;
   }
-  
+
   .target-avatar {
     width: 50px;
     height: 50px;
     font-size: 1.2rem;
   }
-  
+
   .result-item {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .result-avatar {
     margin: 0 auto 1rem;
   }
-  
+
   .result-info {
     margin-right: 0;
   }
-  
+
   .vote-stats {
     justify-content: center;
   }
-  
+
   .voting-summary {
     grid-template-columns: 1fr;
   }
+}
+
+/* 특수요원 해킹 섹션 */
+.agent-hack-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(74, 144, 226, 0.1);
+  border-radius: 12px;
+  border: 2px solid rgba(74, 144, 226, 0.3);
+}
+
+.agent-hack-section h4 {
+  color: #4a90e2;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.hack-description {
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.btn-hack {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.btn-hack:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+}
+
+/* 스파이 포인트 표시 */
+.spy-points-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  background: rgba(156, 39, 176, 0.1);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.spy-points-label {
+  color: #9c27b0;
+  font-weight: bold;
+}
+
+.spy-points-value {
+  color: #9c27b0;
+  font-weight: bold;
+  font-size: 1.1rem;
 }
